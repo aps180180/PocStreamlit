@@ -1,6 +1,7 @@
 """
 Pacote de configurações do sistema
 """
+# Importar configurações visuais
 from .theme import (
     COR_PRIMARY,
     COR_SECONDARY,
@@ -8,23 +9,88 @@ from .theme import (
     ICONE_ADICIONAR,
     ICONE_EDITAR,
     ICONE_EXCLUIR,
+    ICONE_CLIENTES,
+    ICONE_PRODUTOS,
+    ICONE_RELATORIO,
+    ICONE_DOWNLOAD,
     MSG_SUCESSO_ADICIONAR,
     MSG_SUCESSO_ATUALIZAR,
     MSG_SUCESSO_EXCLUIR,
+    MSG_CONFIRMAR_EXCLUSAO,
     OPCOES_REGISTROS_POR_PAGINA,
-    REGISTROS_POR_PAGINA_DEFAULT
+    REGISTROS_POR_PAGINA_DEFAULT,
+)
+
+# Importar configurações da empresa
+from .empresa import (
+    SISTEMA_NOME,
+    SISTEMA_NOME_COMPLETO,
+    SISTEMA_SUBTITULO,
+    SISTEMA_VERSAO,
+    SISTEMA_DESENVOLVEDOR,
+    EMPRESA_NOME,
+    EMPRESA_RAZAO_SOCIAL,
+    EMPRESA_ENDERECO,
+    EMPRESA_CIDADE,
+    EMPRESA_ESTADO,
+    EMPRESA_TELEFONE,
+    EMPRESA_CELULAR,
+    EMPRESA_EMAIL,
+    EMPRESA_SITE,
+    EMPRESA_CNPJ,
+    PDF_AUTOR,
+    PDF_CRIADOR,
+    PDF_PRODUTOR,
+    PDF_ASSUNTO_CLIENTES,
+    PDF_ASSUNTO_PRODUTOS,
+    get_endereco_completo,
+    get_contatos_formatados,
+    get_dados_fiscais,
+    get_info_sistema,
 )
 
 __all__ = [
+    # Tema
     'COR_PRIMARY',
     'COR_SECONDARY',
     'COR_INFO',
     'ICONE_ADICIONAR',
     'ICONE_EDITAR',
     'ICONE_EXCLUIR',
+    'ICONE_CLIENTES',
+    'ICONE_PRODUTOS',
+    'ICONE_RELATORIO',
+    'ICONE_DOWNLOAD',
     'MSG_SUCESSO_ADICIONAR',
     'MSG_SUCESSO_ATUALIZAR',
     'MSG_SUCESSO_EXCLUIR',
+    'MSG_CONFIRMAR_EXCLUSAO',
     'OPCOES_REGISTROS_POR_PAGINA',
-    'REGISTROS_POR_PAGINA_DEFAULT'
+    'REGISTROS_POR_PAGINA_DEFAULT',
+    
+    # Empresa/Sistema
+    'SISTEMA_NOME',
+    'SISTEMA_NOME_COMPLETO',
+    'SISTEMA_SUBTITULO',
+    'SISTEMA_VERSAO',
+    'SISTEMA_DESENVOLVEDOR',
+    'EMPRESA_NOME',
+    'EMPRESA_RAZAO_SOCIAL',
+    'EMPRESA_ENDERECO',
+    'EMPRESA_CIDADE',
+    'EMPRESA_ESTADO',
+    'EMPRESA_TELEFONE',
+    'EMPRESA_CELULAR',
+    'EMPRESA_EMAIL',
+    'EMPRESA_SITE',
+    'EMPRESA_CNPJ',
+    'PDF_AUTOR',
+    'PDF_CRIADOR',
+    'PDF_PRODUTOR',
+    'PDF_ASSUNTO_CLIENTES',
+    'PDF_ASSUNTO_PRODUTOS',
+    'get_endereco_completo',
+    'get_contatos_formatados',
+    'get_dados_fiscais',
+    'get_info_sistema',
 ]

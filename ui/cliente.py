@@ -4,10 +4,12 @@ import db.models as db
 import utils
 import math
 from config.theme import (
-    ICONE_ADICIONAR, 
+    ICONE_ADICIONAR,
+    ICONE_DOWNLOAD, 
     ICONE_EDITAR, 
     ICONE_EXCLUIR,
     ICONE_CLIENTES,
+    ICONE_RELATORIO,
     MSG_SUCESSO_ADICIONAR,
     MSG_SUCESSO_ATUALIZAR,
     MSG_SUCESSO_EXCLUIR,
@@ -15,6 +17,8 @@ from config.theme import (
     OPCOES_REGISTROS_POR_PAGINA,
     REGISTROS_POR_PAGINA_DEFAULT
 )
+from datetime import datetime
+
 
 @st.dialog("Adicionar Cliente")
 def modal_adicionar_cliente():
@@ -162,9 +166,37 @@ def tela_cliente():
     
     with col4:
         st.caption("Ações:")
-        if st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, type="primary", key="btn_novo_cli"):
-            st.session_state.modal_add_cliente = True
-            st.rerun()
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, type="primary", key="btn_novo_cli"):
+                st.session_state.modal_add_cliente = True
+                st.rerun()
+        with col_btn2:
+            if st.button(f"{ICONE_RELATORIO} PDF", use_container_width=True, key="btn_pdf_cli", help="Gerar relatório em PDF"):
+                st.session_state.gerar_pdf_clientes = True
+                st.rerun()
+
+    # Logo após calcular total_clientes e antes da paginação, adicione:
+    if 'gerar_pdf_clientes' in st.session_state and st.session_state.gerar_pdf_clientes:
+        from utils.pdf_generator import gerar_relatorio_clientes_pdf
+        
+        # Buscar TODOS os clientes para o relatório
+        todos_clientes = db.listar_clientes(busca, tipo_busca_db, 999999, 0)
+        filtros_info = f"Tipo: {tipo_busca}, Busca: '{busca if busca else 'Todos'}'"
+        pdf_buffer = gerar_relatorio_clientes_pdf(todos_clientes, filtros_info)
+        
+        st.download_button(
+            label=f"{ICONE_DOWNLOAD} Baixar Relatório de Clientes",
+            data=pdf_buffer,
+            file_name=f"relatorio_clientes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary",
+            key="download_pdf_cli"
+        )
+        st.session_state.pop('gerar_pdf_clientes', None)
+
+        
     
     st.markdown("---")
     

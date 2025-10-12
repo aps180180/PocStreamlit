@@ -2,11 +2,14 @@ import streamlit as st
 import streamlit_antd_components as sac
 import db.models as db
 import math
+from datetime import datetime
 from config.theme import (
     ICONE_ADICIONAR, 
     ICONE_EDITAR, 
     ICONE_EXCLUIR,
     ICONE_PRODUTOS,
+    ICONE_RELATORIO,
+    ICONE_DOWNLOAD,
     MSG_SUCESSO_ADICIONAR,
     MSG_SUCESSO_ATUALIZAR,
     MSG_SUCESSO_EXCLUIR,
@@ -161,9 +164,15 @@ def tela_produto():
     
     with col4:
         st.caption("Ações:")
-        if st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, type="primary", key="btn_novo_prod"):
-            st.session_state.modal_add_produto = True
-            st.rerun()
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, type="primary", key="btn_novo_prod"):
+                st.session_state.modal_add_produto = True
+                st.rerun()
+        with col_btn2:
+            if st.button(f"{ICONE_RELATORIO} PDF", use_container_width=True, key="btn_pdf_prod", help="Gerar relatório em PDF"):
+                st.session_state.gerar_pdf_produtos = True
+                st.rerun()
     
     st.markdown("---")
     
@@ -174,6 +183,26 @@ def tela_produto():
     
     # Buscar produtos da página atual
     produtos = db.listar_produtos(busca, tipo_busca_db, registros_por_pagina, offset)
+    
+    # Verificar se deve gerar PDF
+    if 'gerar_pdf_produtos' in st.session_state and st.session_state.gerar_pdf_produtos:
+        from utils.pdf_generator import gerar_relatorio_produtos_pdf
+        
+        # Buscar TODOS os produtos para o relatório
+        todos_produtos = db.listar_produtos(busca, tipo_busca_db, 999999, 0)
+        filtros_info = f"Tipo: {tipo_busca}, Busca: '{busca if busca else 'Todos'}'"
+        pdf_buffer = gerar_relatorio_produtos_pdf(todos_produtos, filtros_info)
+        
+        st.download_button(
+            label=f"{ICONE_DOWNLOAD} Baixar Relatório de Produtos",
+            data=pdf_buffer,
+            file_name=f"relatorio_produtos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary",
+            key="download_pdf_prod"
+        )
+        st.session_state.pop('gerar_pdf_produtos', None)
     
     # PAGINAÇÃO NO TOPO
     if total_produtos > 0:

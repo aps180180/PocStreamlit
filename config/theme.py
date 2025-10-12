@@ -32,6 +32,9 @@ ICONE_CANCELAR = "❌"
 ICONE_BUSCAR = "🔍"
 ICONE_CLIENTES = "people-fill"
 ICONE_PRODUTOS = "bag-fill"
+ICONE_RELATORIO = "📄"
+ICONE_DOWNLOAD = "⬇️"
+
 
 # ==================== MENSAGENS ====================
 
