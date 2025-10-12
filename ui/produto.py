@@ -96,6 +96,9 @@ def tela_produto():
     if 'registros_por_pagina_produto' not in st.session_state:
         st.session_state.registros_por_pagina_produto = REGISTROS_POR_PAGINA_DEFAULT
     
+    if 'tipo_busca_produto' not in st.session_state:
+        st.session_state.tipo_busca_produto = "Nome"
+    
     # Verificar se deve abrir modal de adicionar
     if 'modal_add_produto' in st.session_state and st.session_state.modal_add_produto:
         modal_adicionar_produto()
@@ -111,30 +114,45 @@ def tela_produto():
     # Título
     sac.divider(label='Gerenciamento de Produtos', icon=ICONE_PRODUTOS, align='center', color='green')
     
-    # Barra de controles
-    col1, col2, col3, col4 = st.columns([1.2, 3.5, 1, 1])
+    # Container de controles com labels acima
+    st.markdown("##### Filtros e Controles")
+    col1, col2, col3, col4 = st.columns([1.5, 3.5, 1.2, 1])
     
     with col1:
-        tipo_busca = st.selectbox(
-            "Buscar por",
-            ["Nome", "Código"],
-            key='tipo_busca_produto'
+        st.caption("Buscar por:")
+        tipo_busca = sac.segmented(
+            items=['Nome', 'Código'],
+            label='',
+            index=0 if st.session_state.tipo_busca_produto == "Nome" else 1,
+            align='start',
+            size='sm',
+            key='seg_tipo_busca_produto',
+            readonly=False
         )
+        if tipo_busca != st.session_state.tipo_busca_produto:
+            st.session_state.tipo_busca_produto = tipo_busca
+            st.rerun()
         tipo_busca_db = "nome" if tipo_busca == "Nome" else "codigo"
     
     with col2:
+        st.caption("Digite para buscar:")
         placeholder = "Digite o código..." if tipo_busca == "Código" else "Digite o nome..."
-        busca = st.text_input("Digite para buscar", placeholder=placeholder, key='busca_produto')
-        if busca:
+        busca = st.text_input("", placeholder=placeholder, key='busca_produto', label_visibility="collapsed")
+        if busca and 'busca_anterior_produto' in st.session_state and busca != st.session_state.busca_anterior_produto:
             st.session_state.pagina_atual_produto = 1
+        st.session_state.busca_anterior_produto = busca
     
     with col3:
-        registros_por_pagina = st.selectbox(
-            "Por página",
-            OPCOES_REGISTROS_POR_PAGINA,
+        st.caption("Por página:")
+        registros_label = sac.segmented(
+            items=[str(x) for x in OPCOES_REGISTROS_POR_PAGINA],
+            label='',
             index=OPCOES_REGISTROS_POR_PAGINA.index(st.session_state.registros_por_pagina_produto),
-            key='select_registros_produto_novo'
+            size='sm',
+            key='seg_registros_produto',
+            readonly=False
         )
+        registros_por_pagina = int(registros_label)
         
         if registros_por_pagina != st.session_state.registros_por_pagina_produto:
             st.session_state.registros_por_pagina_produto = registros_por_pagina
@@ -142,7 +160,7 @@ def tela_produto():
             st.rerun()
     
     with col4:
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.caption("Ações:")
         if st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, type="primary", key="btn_novo_prod"):
             st.session_state.modal_add_produto = True
             st.rerun()
@@ -157,8 +175,24 @@ def tela_produto():
     # Buscar produtos da página atual
     produtos = db.listar_produtos(busca, tipo_busca_db, registros_por_pagina, offset)
     
-    # Informações
-    st.markdown(f"**Total:** {total_produtos} produtos | **Página** {st.session_state.pagina_atual_produto} de {total_paginas}")
+    # PAGINAÇÃO NO TOPO
+    if total_produtos > 0:
+        col_info, col_pag = st.columns([1, 2])
+        with col_info:
+            st.markdown(f"**Total:** {total_produtos} produtos | **Página** {st.session_state.pagina_atual_produto} de {total_paginas}")
+        with col_pag:
+            nova_pagina = sac.pagination(
+                total=total_produtos,
+                page_size=registros_por_pagina,
+                align='end',
+                show_total=False,
+                jump=True,
+                key='pagination_produto_top'
+            )
+            if nova_pagina != st.session_state.pagina_atual_produto:
+                st.session_state.pagina_atual_produto = nova_pagina
+                st.rerun()
+    
     st.markdown("---")
     
     if produtos:
@@ -198,22 +232,6 @@ def tela_produto():
                         st.rerun()
             
             st.divider()
-        
-        # Paginação
-        st.write("")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            nova_pagina = sac.pagination(
-                total=total_produtos,
-                page_size=registros_por_pagina,
-                align='center',
-                show_total=True,
-                jump=True,
-                key='pagination_produto'
-            )
-            if nova_pagina != st.session_state.pagina_atual_produto:
-                st.session_state.pagina_atual_produto = nova_pagina
-                st.rerun()
     else:
         sac.result(
             label='Nenhum produto encontrado',

@@ -97,6 +97,9 @@ def tela_cliente():
     if 'registros_por_pagina_cliente' not in st.session_state:
         st.session_state.registros_por_pagina_cliente = REGISTROS_POR_PAGINA_DEFAULT
     
+    if 'tipo_busca_cliente' not in st.session_state:
+        st.session_state.tipo_busca_cliente = "Nome"
+    
     # Verificar se deve abrir modal de adicionar
     if 'modal_add_cliente' in st.session_state and st.session_state.modal_add_cliente:
         modal_adicionar_cliente()
@@ -112,30 +115,45 @@ def tela_cliente():
     # Título
     sac.divider(label='Gerenciamento de Clientes', icon=ICONE_CLIENTES, align='center', color='blue')
     
-    # Barra de controles
-    col1, col2, col3, col4 = st.columns([1.2, 3.5, 1, 1])
+    # Container de controles com labels acima
+    st.markdown("##### Filtros e Controles")
+    col1, col2, col3, col4 = st.columns([1.5, 3.5, 1.2, 1])
     
     with col1:
-        tipo_busca = st.selectbox(
-            "Buscar por",
-            ["Nome", "Código"],
-            key='tipo_busca_cliente'
+        st.caption("Buscar por:")
+        tipo_busca = sac.segmented(
+            items=['Nome', 'Código'],
+            label='',
+            index=0 if st.session_state.tipo_busca_cliente == "Nome" else 1,
+            align='start',
+            size='sm',
+            key='seg_tipo_busca_cliente',
+            readonly=False
         )
+        if tipo_busca != st.session_state.tipo_busca_cliente:
+            st.session_state.tipo_busca_cliente = tipo_busca
+            st.rerun()
         tipo_busca_db = "nome" if tipo_busca == "Nome" else "codigo"
     
     with col2:
+        st.caption("Digite para buscar:")
         placeholder = "Digite o código..." if tipo_busca == "Código" else "Digite o nome..."
-        busca = st.text_input("Digite para buscar", placeholder=placeholder, key='busca_cliente')
-        if busca:
+        busca = st.text_input("", placeholder=placeholder, key='busca_cliente', label_visibility="collapsed")
+        if busca and 'busca_anterior_cliente' in st.session_state and busca != st.session_state.busca_anterior_cliente:
             st.session_state.pagina_atual_cliente = 1
+        st.session_state.busca_anterior_cliente = busca
     
     with col3:
-        registros_por_pagina = st.selectbox(
-            "Por página",
-            OPCOES_REGISTROS_POR_PAGINA,
+        st.caption("Por página:")
+        registros_label = sac.segmented(
+            items=[str(x) for x in OPCOES_REGISTROS_POR_PAGINA],
+            label='',
             index=OPCOES_REGISTROS_POR_PAGINA.index(st.session_state.registros_por_pagina_cliente),
-            key='select_registros_cliente_novo'
+            size='sm',
+            key='seg_registros_cliente',
+            readonly=False
         )
+        registros_por_pagina = int(registros_label)
         
         if registros_por_pagina != st.session_state.registros_por_pagina_cliente:
             st.session_state.registros_por_pagina_cliente = registros_por_pagina
@@ -143,7 +161,7 @@ def tela_cliente():
             st.rerun()
     
     with col4:
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.caption("Ações:")
         if st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, type="primary", key="btn_novo_cli"):
             st.session_state.modal_add_cliente = True
             st.rerun()
@@ -158,8 +176,24 @@ def tela_cliente():
     # Buscar clientes da página atual
     clientes = db.listar_clientes(busca, tipo_busca_db, registros_por_pagina, offset)
     
-    # Informações
-    st.markdown(f"**Total:** {total_clientes} clientes | **Página** {st.session_state.pagina_atual_cliente} de {total_paginas}")
+    # PAGINAÇÃO NO TOPO
+    if total_clientes > 0:
+        col_info, col_pag = st.columns([1, 2])
+        with col_info:
+            st.markdown(f"**Total:** {total_clientes} clientes | **Página** {st.session_state.pagina_atual_cliente} de {total_paginas}")
+        with col_pag:
+            nova_pagina = sac.pagination(
+                total=total_clientes,
+                page_size=registros_por_pagina,
+                align='end',
+                show_total=False,
+                jump=True,
+                key='pagination_cliente_top'
+            )
+            if nova_pagina != st.session_state.pagina_atual_cliente:
+                st.session_state.pagina_atual_cliente = nova_pagina
+                st.rerun()
+    
     st.markdown("---")
     
     if clientes:
@@ -199,22 +233,6 @@ def tela_cliente():
                         st.rerun()
             
             st.divider()
-        
-        # Paginação
-        st.write("")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            nova_pagina = sac.pagination(
-                total=total_clientes,
-                page_size=registros_por_pagina,
-                align='center',
-                show_total=True,
-                jump=True,
-                key='pagination_cliente'
-            )
-            if nova_pagina != st.session_state.pagina_atual_cliente:
-                st.session_state.pagina_atual_cliente = nova_pagina
-                st.rerun()
     else:
         sac.result(
             label='Nenhum cliente encontrado',
