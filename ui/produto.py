@@ -186,13 +186,18 @@ def tela_produto():
     
     # Verificar se deve gerar PDF
     if 'gerar_pdf_produtos' in st.session_state and st.session_state.gerar_pdf_produtos:
-        from utils.pdf_generator import gerar_relatorio_produtos_pdf
+        with st.spinner('🔄 Gerando relatório em PDF... Aguarde.'):
+            from utils.pdf_generator import gerar_relatorio_produtos_pdf
+            
+            # Buscar TODOS os produtos para o relatório
+            todos_produtos = db.listar_produtos(busca, tipo_busca_db, 999999, 0)
+            filtros_info = f"Tipo: {tipo_busca}, Busca: '{busca if busca else 'Todos'}'"
+            pdf_buffer = gerar_relatorio_produtos_pdf(todos_produtos, filtros_info)
         
-        # Buscar TODOS os produtos para o relatório
-        todos_produtos = db.listar_produtos(busca, tipo_busca_db, 999999, 0)
-        filtros_info = f"Tipo: {tipo_busca}, Busca: '{busca if busca else 'Todos'}'"
-        pdf_buffer = gerar_relatorio_produtos_pdf(todos_produtos, filtros_info)
+        # Mostrar mensagem de sucesso
+        st.success(f'✅ Relatório gerado com sucesso! Total de {len(todos_produtos)} produto(s).')
         
+        # Botão de download
         st.download_button(
             label=f"{ICONE_DOWNLOAD} Baixar Relatório de Produtos",
             data=pdf_buffer,

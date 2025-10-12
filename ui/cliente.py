@@ -1,15 +1,16 @@
 import streamlit as st
 import streamlit_antd_components as sac
 import db.models as db
-import utils
+from utils.validacao import validar_email
 import math
+from datetime import datetime
 from config.theme import (
-    ICONE_ADICIONAR,
-    ICONE_DOWNLOAD, 
+    ICONE_ADICIONAR, 
     ICONE_EDITAR, 
     ICONE_EXCLUIR,
     ICONE_CLIENTES,
     ICONE_RELATORIO,
+    ICONE_DOWNLOAD,
     MSG_SUCESSO_ADICIONAR,
     MSG_SUCESSO_ATUALIZAR,
     MSG_SUCESSO_EXCLUIR,
@@ -17,8 +18,6 @@ from config.theme import (
     OPCOES_REGISTROS_POR_PAGINA,
     REGISTROS_POR_PAGINA_DEFAULT
 )
-from datetime import datetime
-
 
 @st.dialog("Adicionar Cliente")
 def modal_adicionar_cliente():
@@ -32,7 +31,7 @@ def modal_adicionar_cliente():
             if st.form_submit_button("Salvar", use_container_width=True, type="primary"):
                 if not nome.strip():
                     st.error("Informe o nome")
-                elif not utils.validar_email(email):
+                elif not validar_email(email):
                     st.error("Email inválido")
                 else:
                     db.inserir_cliente(nome, email)
@@ -60,7 +59,7 @@ def modal_editar_cliente(cliente_id):
                 if st.form_submit_button("Salvar", use_container_width=True, type="primary"):
                     if not nome.strip():
                         st.error("Nome obrigatório")
-                    elif not utils.validar_email(email):
+                    elif not validar_email(email):
                         st.error("Email inválido")
                     else:
                         db.atualizar_cliente(cliente_id, nome, email)
@@ -175,28 +174,6 @@ def tela_cliente():
             if st.button(f"{ICONE_RELATORIO} PDF", use_container_width=True, key="btn_pdf_cli", help="Gerar relatório em PDF"):
                 st.session_state.gerar_pdf_clientes = True
                 st.rerun()
-
-    # Logo após calcular total_clientes e antes da paginação, adicione:
-    if 'gerar_pdf_clientes' in st.session_state and st.session_state.gerar_pdf_clientes:
-        from utils.pdf_generator import gerar_relatorio_clientes_pdf
-        
-        # Buscar TODOS os clientes para o relatório
-        todos_clientes = db.listar_clientes(busca, tipo_busca_db, 999999, 0)
-        filtros_info = f"Tipo: {tipo_busca}, Busca: '{busca if busca else 'Todos'}'"
-        pdf_buffer = gerar_relatorio_clientes_pdf(todos_clientes, filtros_info)
-        
-        st.download_button(
-            label=f"{ICONE_DOWNLOAD} Baixar Relatório de Clientes",
-            data=pdf_buffer,
-            file_name=f"relatorio_clientes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            type="primary",
-            key="download_pdf_cli"
-        )
-        st.session_state.pop('gerar_pdf_clientes', None)
-
-        
     
     st.markdown("---")
     
@@ -207,6 +184,31 @@ def tela_cliente():
     
     # Buscar clientes da página atual
     clientes = db.listar_clientes(busca, tipo_busca_db, registros_por_pagina, offset)
+    
+    # Verificar se deve gerar PDF
+    if 'gerar_pdf_clientes' in st.session_state and st.session_state.gerar_pdf_clientes:
+        with st.spinner('🔄 Gerando relatório em PDF... Aguarde.'):
+            from utils.pdf_generator import gerar_relatorio_clientes_pdf
+            
+            # Buscar TODOS os clientes para o relatório
+            todos_clientes = db.listar_clientes(busca, tipo_busca_db, 999999, 0)
+            filtros_info = f"Tipo: {tipo_busca}, Busca: '{busca if busca else 'Todos'}'"
+            pdf_buffer = gerar_relatorio_clientes_pdf(todos_clientes, filtros_info)
+        
+        # Mostrar mensagem de sucesso
+        st.success(f'✅ Relatório gerado com sucesso! Total de {len(todos_clientes)} cliente(s).')
+        
+        # Botão de download
+        st.download_button(
+            label=f"{ICONE_DOWNLOAD} Baixar Relatório de Clientes",
+            data=pdf_buffer,
+            file_name=f"relatorio_clientes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary",
+            key="download_pdf_cli"
+        )
+        st.session_state.pop('gerar_pdf_clientes', None)
     
     # PAGINAÇÃO NO TOPO
     if total_clientes > 0:
@@ -250,16 +252,16 @@ def tela_cliente():
             with col2:
                 st.write(cliente[1])
             with col3:
-                st.write(cliente[2])
+                st.text(cliente[2])
             with col4:
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
-                    if st.button(f"{ICONE_EDITAR}", key=f"btn_edit_cli_{cliente[0]}", use_container_width=True, help="Editar cliente"):
+                    if st.button(f"{ICONE_EDITAR}", key=f"btn_edit_cli_{cliente[0]}", use_container_width=True,help="Editar cliente"):
                         st.session_state.modal_edit_cliente = True
                         st.session_state.cliente_id_editar = cliente[0]
                         st.rerun()
                 with col_btn2:
-                    if st.button(f"{ICONE_EXCLUIR}", key=f"btn_del_cli_{cliente[0]}", use_container_width=True, type="secondary", help="Excluir cliente"):
+                    if st.button(f"{ICONE_EXCLUIR}", key=f"btn_del_cli_{cliente[0]}", use_container_width=True,  help="Excluir cliente"):
                         st.session_state.modal_confirmar_exclusao_cliente = True
                         st.session_state.cliente_id_excluir = cliente[0]
                         st.rerun()
