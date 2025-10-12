@@ -9,11 +9,21 @@ def aplicar_estilos():
     
     css_compacto = """
     <style>
+    
+    /* ========== FORÇAR SIDEBAR SEMPRE VISÍVEL ========== */
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+    
+    section[data-testid="stSidebar"] {
+        display: block !important;
+    }
+    
     /* ========== OCULTAR MENU E RODAPÉ DO STREAMLIT ========== */
     #MainMenu {visibility: hidden;}
     .stDeployButton {display: none;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
+    
     
     /* ========== DESABILITAR LINKS AUTOMÁTICOS ========== */
     a[href^="mailto:"] {
@@ -68,5 +78,7 @@ def aplicar_estilos():
     div[data-testid="column"] {padding: 0.3rem 0.5rem !important;}
     </style>
     """
+
+
     
     st.markdown(css_custom + css_compacto, unsafe_allow_html=True)
