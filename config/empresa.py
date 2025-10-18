@@ -1,7 +1,7 @@
 """
 Configurações da empresa e informações do sistema
 """
-
+from decouple import config
 # ==================== INFORMAÇÕES DO SISTEMA ====================
 
 SISTEMA_NOME = "Simple ERP"
@@ -57,6 +57,16 @@ PDF_MOSTRAR_LOGO = False  # Se True, tenta carregar logo do arquivo
 PDF_LOGO_PATH = "assets/logo.png"  # Caminho para o logo (se existir)
 PDF_MOSTRAR_DADOS_EMPRESA = True  # Mostrar dados da empresa no cabeçalho
 PDF_MOSTRAR_RODAPE_COMPLETO = True  # Rodapé com todas as informações
+
+#==================== CONFIGURAÇÕES DO BANCO DE DADOS ====================
+
+# Ler do arquivo .env (ou variáveis de ambiente do sistema)
+BANCO_HOST = config('BANCO_HOST', default='localhost')
+BANCO_CAMINHO = config('BANCO_CAMINHO')
+BANCO_USER = config('BANCO_USER', default='SYSDBA')
+BANCO_PASSWORD = config('BANCO_PASSWORD', default='masterkey')
+BANCO_CHARSET = config('BANCO_CHARSET', default='UTF8')
+BANCO_TIMEOUT = config('BANCO_TIMEOUT', default=30, cast=int)
 
 # ==================== FUNÇÕES AUXILIARES ====================
 

@@ -1,177 +1,154 @@
 """
-Arquivo de configuração de cores e estilos do sistema
+Configurações de tema e ícones do sistema
+Define cores, ícones e estilos visuais
 """
 
-# ==================== CORES DO SISTEMA ====================
+# ==================== CORES DO TEMA ====================
 
-# Cores principais
-COR_PRIMARY = "#27AE60"  # Verde
-COR_SECONDARY = "#E74C3C"  # Vermelho
-COR_INFO = "#3498DB"  # Azul
-COR_WARNING = "#F39C12"  # Laranja
-COR_SUCCESS = "#2ECC71"  # Verde claro
-COR_DANGER = "#C0392B"  # Vermelho escuro
+COR_PRIMARIA = "#3498DB"      # Azul principal
+COR_SECUNDARIA = "#2ECC71"    # Verde secundário
+COR_SUCESSO = "#27AE60"       # Verde sucesso
+COR_PERIGO = "#E74C3C"        # Vermelho perigo
+COR_AVISO = "#F39C12"         # Laranja aviso
+COR_INFO = "#3498DB"          # Azul informação
+COR_FUNDO = "#FFFFFF"         # Branco fundo
+COR_TEXTO = "#2C3E50"         # Cinza escuro texto
+COR_BORDA = "#BDC3C7"         # Cinza borda
 
-# Cores de fundo
-COR_FUNDO_DARK = "#1E1E1E"
-COR_FUNDO_LIGHT = "#FFFFFF"
-COR_FUNDO_CARD = "#2C3E50"
+# ==================== ÍCONES DO SISTEMA ====================
 
-# Cores de texto
-COR_TEXTO_PRIMARY = "#2C3E50"
-COR_TEXTO_LIGHT = "#ECF0F1"
-COR_TEXTO_MUTED = "#95A5A6"
+# Ícones gerais
+ICONE_HOME = "🏠"
+ICONE_DASHBOARD = "📊"
+ICONE_MENU = "☰"
+ICONE_BUSCAR = "🔍"
+ICONE_FILTRO = "🎯"
 
-# ==================== ÍCONES ====================
-
+# Ícones de ações
 ICONE_ADICIONAR = "➕"
 ICONE_EDITAR = "✏️"
 ICONE_EXCLUIR = "🗑️"
 ICONE_SALVAR = "💾"
 ICONE_CANCELAR = "❌"
-ICONE_BUSCAR = "🔍"
-ICONE_CLIENTES = "people-fill"
-ICONE_PRODUTOS = "bag-fill"
-ICONE_RELATORIO = "📄"
+ICONE_CONFIRMAR = "✅"
+
+# Ícones de exportação
+ICONE_PDF = "📄"
+ICONE_EXCEL = "📊"
+ICONE_CSV = "📋"
+ICONE_IMPRIMIR = "🖨️"
 ICONE_DOWNLOAD = "⬇️"
 
+# Ícones de navegação
+ICONE_ANTERIOR = "◀"
+ICONE_PROXIMO = "▶"
+ICONE_PRIMEIRA = "⏮"
+ICONE_ULTIMA = "⏭"
 
-# ==================== MENSAGENS ====================
+# Ícones de módulos
+ICONE_CLIENTES = "👥"
+ICONE_PRODUTOS = "📦"
+ICONE_USUARIOS = "👤"
+ICONE_RELATORIOS = "📈"
+ICONE_CONFIGURACOES = "⚙️"
 
-MSG_SUCESSO_ADICIONAR = "{} adicionado com sucesso!"
-MSG_SUCESSO_ATUALIZAR = "{} atualizado com sucesso!"
-MSG_SUCESSO_EXCLUIR = "{} excluído com sucesso!"
-MSG_ERRO_CAMPO_OBRIGATORIO = "Por favor, preencha todos os campos obrigatórios."
-MSG_CONFIRMAR_EXCLUSAO = "Tem certeza que deseja excluir {}?"
+# Ícones de status
+ICONE_ATIVO = "✅"
+ICONE_INATIVO = "❌"
+ICONE_PENDENTE = "⏳"
+ICONE_SUCESSO = "🎉"
+ICONE_ERRO = "⚠️"
+ICONE_INFO = "ℹ️"
 
-# ==================== CONFIGURAÇÕES DE PAGINAÇÃO ====================
+# Ícones de segurança
+ICONE_LOGIN = "🔐"
+ICONE_LOGOUT = "🚪"
+ICONE_SENHA = "🔑"
+ICONE_PERFIL = "🎭"
+ICONE_PERMISSAO = "🔒"
 
-OPCOES_REGISTROS_POR_PAGINA = [10, 25, 50, 100]
-REGISTROS_POR_PAGINA_DEFAULT = 10
+# ==================== CONFIGURAÇÕES DE TAMANHO ====================
 
-# ==================== CSS PERSONALIZADO ====================
+TAMANHO_FONTE_PADRAO = "14px"
+TAMANHO_FONTE_TITULO = "24px"
+TAMANHO_FONTE_SUBTITULO = "18px"
+TAMANHO_FONTE_PEQUENA = "12px"
 
-def get_custom_css():
+# ==================== CONFIGURAÇÕES DE ESPAÇAMENTO ====================
+
+ESPACAMENTO_PEQUENO = "0.5rem"
+ESPACAMENTO_MEDIO = "1rem"
+ESPACAMENTO_GRANDE = "2rem"
+
+# ==================== CONFIGURAÇÕES DE BORDA ====================
+
+BORDA_RAIO_PEQUENO = "3px"
+BORDA_RAIO_MEDIO = "5px"
+BORDA_RAIO_GRANDE = "10px"
+
+# ==================== TEMAS PRÉ-DEFINIDOS ====================
+
+TEMA_CLARO = {
+    "primaryColor": COR_PRIMARIA,
+    "backgroundColor": "#FFFFFF",
+    "secondaryBackgroundColor": "#F0F2F6",
+    "textColor": COR_TEXTO,
+    "font": "sans serif"
+}
+
+TEMA_ESCURO = {
+    "primaryColor": COR_PRIMARIA,
+    "backgroundColor": "#1E1E1E",
+    "secondaryBackgroundColor": "#262730",
+    "textColor": "#FFFFFF",
+    "font": "sans serif"
+}
+
+# ==================== MAPEAMENTO DE CORES POR STATUS ====================
+
+CORES_STATUS = {
+    "ativo": COR_SUCESSO,
+    "inativo": COR_PERIGO,
+    "pendente": COR_AVISO,
+    "concluido": COR_SUCESSO,
+    "cancelado": COR_PERIGO,
+    "processando": COR_INFO
+}
+
+# ==================== MAPEAMENTO DE ÍCONES POR AÇÃO ====================
+
+ICONES_ACOES = {
+    "criar": ICONE_ADICIONAR,
+    "editar": ICONE_EDITAR,
+    "excluir": ICONE_EXCLUIR,
+    "visualizar": "👁️",
+    "exportar": ICONE_PDF,
+    "imprimir": ICONE_IMPRIMIR,
+    "download": ICONE_DOWNLOAD
+}
+
+# ==================== FUNÇÕES AUXILIARES ====================
+
+def get_icone_por_acao(acao: str) -> str:
     """
-    Retorna CSS personalizado para a aplicação
+    Retorna o ícone correspondente à ação
+    
+    Args:
+        acao (str): Nome da ação
+        
+    Returns:
+        str: Ícone correspondente
     """
-    return f"""
-    <style>
-    /* Cabeçalhos */
-    h1, h2, h3, h4 {{
-        color: {COR_TEXTO_PRIMARY};
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }}
-    
-    /* Botões primários */
-    div.stButton > button[kind="primary"] {{
-        background-color: {COR_PRIMARY};
-        color: white;
-        border-radius: 8px;
-        height: 40px;
-        font-weight: 600;
-        transition: all 0.3s;
-        border: none;
-    }}
-    
-    div.stButton > button[kind="primary"]:hover {{
-        background-color: #229954;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        transform: translateY(-2px);
-    }}
-    
-    /* Botões secundários */
-    div.stButton > button[kind="secondary"] {{
-        background-color: {COR_SECONDARY};
-        color: white;
-        border-radius: 8px;
-        height: 40px;
-        font-weight: 600;
-        transition: all 0.3s;
-        border: none;
-    }}
-    
-    div.stButton > button[kind="secondary"]:hover {{
-        background-color: {COR_DANGER};
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        transform: translateY(-2px);
-    }}
-    
-    /* Botões normais */
-    div.stButton > button {{
-        background-color: {COR_INFO};
-        color: white;
-        border-radius: 8px;
-        height: 40px;
-        font-weight: 600;
-        transition: all 0.3s;
-    }}
-    
-    div.stButton > button:hover {{
-        background-color: #2980B9;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        transform: translateY(-1px);
-    }}
-    
-    /* Inputs de texto */
-    .stTextInput>div>input {{
-        border-radius: 5px;
-        border: 1.5px solid #BDC3C7;
-        height: 40px;
-        padding-left: 12px;
-        transition: border-color 0.3s;
-    }}
-    
-    .stTextInput>div>input:focus {{
-        border-color: {COR_INFO};
-        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-    }}
-    
-    /* Selectbox */
-    .stSelectbox>div>div {{
-        border-radius: 5px;
-        border: 1.5px solid #BDC3C7;
-    }}
-    
-    /* Dividers */
-    hr {{
-        margin: 1rem 0;
-        border-color: #ECF0F1;
-    }}
-    
-    /* Cards */
-    [data-testid="column"] {{
-        padding: 0.5rem;
-    }}
-    
-    /* Tabelas */
-    .dataframe {{
-        border-radius: 8px;
-        overflow: hidden;
-    }}
-    
-    /* Alertas de sucesso */
-    .stSuccess {{
-        background-color: {COR_SUCCESS};
-        color: white;
-        border-radius: 5px;
-        padding: 1rem;
-    }}
-    
-    /* Alertas de erro */
-    .stError {{
-        background-color: {COR_SECONDARY};
-        color: white;
-        border-radius: 5px;
-        padding: 1rem;
-    }}
-    
-    /* Alertas de warning */
-    .stWarning {{
-        background-color: {COR_WARNING};
-        color: white;
-        border-radius: 5px;
-        padding: 1rem;
-    }}
-    </style>
+    return ICONES_ACOES.get(acao.lower(), "📌")
+
+def get_cor_por_status(status: str) -> str:
     """
+    Retorna a cor correspondente ao status
+    
+    Args:
+        status (str): Nome do status
+        
+    Returns:
+        str: Código hexadecimal da cor
+    """
+    return CORES_STATUS.get(status.lower(), COR_INFO)

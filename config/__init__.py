@@ -1,96 +1,83 @@
 """
-Pacote de configurações do sistema
+Módulo de configurações
+Centraliza importações de configurações do sistema
 """
-# Importar configurações visuais
+from .empresa import (
+    SISTEMA_NOME,
+    SISTEMA_VERSAO,
+    SISTEMA_SUBTITULO,
+    EMPRESA_NOME,
+    EMPRESA_CNPJ,
+    EMPRESA_ENDERECO,
+    EMPRESA_CIDADE,
+    EMPRESA_CEP,
+    EMPRESA_TELEFONE,
+    EMPRESA_EMAIL,
+    EMPRESA_SITE,
+    BANCO_HOST,
+    BANCO_CAMINHO,
+    BANCO_USER,
+    BANCO_PASSWORD,
+    BANCO_CHARSET
+)
+
 from .theme import (
-    COR_PRIMARY,
-    COR_SECONDARY,
+    COR_PRIMARIA,          # CORRIGIDO (era COR_PRIMARY)
+    COR_SECUNDARIA,        # CORRIGIDO (era COR_SECONDARY)
+    COR_SUCESSO,
+    COR_PERIGO,
+    COR_AVISO,
     COR_INFO,
+    COR_FUNDO,
+    COR_TEXTO,
+    COR_BORDA,
     ICONE_ADICIONAR,
     ICONE_EDITAR,
     ICONE_EXCLUIR,
+    ICONE_PDF,
     ICONE_CLIENTES,
     ICONE_PRODUTOS,
-    ICONE_RELATORIO,
-    ICONE_DOWNLOAD,
-    MSG_SUCESSO_ADICIONAR,
-    MSG_SUCESSO_ATUALIZAR,
-    MSG_SUCESSO_EXCLUIR,
-    MSG_CONFIRMAR_EXCLUSAO,
-    OPCOES_REGISTROS_POR_PAGINA,
-    REGISTROS_POR_PAGINA_DEFAULT,
-)
-
-# Importar configurações da empresa
-from .empresa import (
-    SISTEMA_NOME,
-    SISTEMA_NOME_COMPLETO,
-    SISTEMA_SUBTITULO,
-    SISTEMA_VERSAO,
-    SISTEMA_DESENVOLVEDOR,
-    EMPRESA_NOME,
-    EMPRESA_RAZAO_SOCIAL,
-    EMPRESA_ENDERECO,
-    EMPRESA_CIDADE,
-    EMPRESA_ESTADO,
-    EMPRESA_TELEFONE,
-    EMPRESA_CELULAR,
-    EMPRESA_EMAIL,
-    EMPRESA_SITE,
-    EMPRESA_CNPJ,
-    PDF_AUTOR,
-    PDF_CRIADOR,
-    PDF_PRODUTOR,
-    PDF_ASSUNTO_CLIENTES,
-    PDF_ASSUNTO_PRODUTOS,
-    get_endereco_completo,
-    get_contatos_formatados,
-    get_dados_fiscais,
-    get_info_sistema,
+    ICONE_USUARIOS
 )
 
 __all__ = [
-    # Tema
-    'COR_PRIMARY',
-    'COR_SECONDARY',
+    # Empresa
+    'SISTEMA_NOME',
+    'SISTEMA_VERSAO',
+    'SISTEMA_SUBTITULO',
+    'EMPRESA_NOME',
+    'EMPRESA_CNPJ',
+    'EMPRESA_ENDERECO',
+    'EMPRESA_CIDADE',
+    'EMPRESA_CEP',
+    'EMPRESA_TELEFONE',
+    'EMPRESA_EMAIL',
+    'EMPRESA_SITE',
+    
+    # Banco de dados
+    'BANCO_HOST',
+    'BANCO_CAMINHO',
+    'BANCO_USER',
+    'BANCO_PASSWORD',
+    'BANCO_CHARSET',
+    
+    # Cores
+    'COR_PRIMARIA',
+    'COR_SECUNDARIA',
+    'COR_SUCESSO',
+    'COR_PERIGO',
+    'COR_AVISO',
     'COR_INFO',
+    'COR_FUNDO',
+    'COR_TEXTO',
+    'COR_BORDA',
+    
+    # Ícones
     'ICONE_ADICIONAR',
     'ICONE_EDITAR',
     'ICONE_EXCLUIR',
+    'ICONE_PDF',
     'ICONE_CLIENTES',
     'ICONE_PRODUTOS',
-    'ICONE_RELATORIO',
-    'ICONE_DOWNLOAD',
-    'MSG_SUCESSO_ADICIONAR',
-    'MSG_SUCESSO_ATUALIZAR',
-    'MSG_SUCESSO_EXCLUIR',
-    'MSG_CONFIRMAR_EXCLUSAO',
-    'OPCOES_REGISTROS_POR_PAGINA',
-    'REGISTROS_POR_PAGINA_DEFAULT',
-    
-    # Empresa/Sistema
-    'SISTEMA_NOME',
-    'SISTEMA_NOME_COMPLETO',
-    'SISTEMA_SUBTITULO',
-    'SISTEMA_VERSAO',
-    'SISTEMA_DESENVOLVEDOR',
-    'EMPRESA_NOME',
-    'EMPRESA_RAZAO_SOCIAL',
-    'EMPRESA_ENDERECO',
-    'EMPRESA_CIDADE',
-    'EMPRESA_ESTADO',
-    'EMPRESA_TELEFONE',
-    'EMPRESA_CELULAR',
-    'EMPRESA_EMAIL',
-    'EMPRESA_SITE',
-    'EMPRESA_CNPJ',
-    'PDF_AUTOR',
-    'PDF_CRIADOR',
-    'PDF_PRODUTOR',
-    'PDF_ASSUNTO_CLIENTES',
-    'PDF_ASSUNTO_PRODUTOS',
-    'get_endereco_completo',
-    'get_contatos_formatados',
-    'get_dados_fiscais',
-    'get_info_sistema',
+    'ICONE_USUARIOS'
 ]
