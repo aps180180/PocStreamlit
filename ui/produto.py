@@ -1,6 +1,6 @@
 """
 Interface de Gestão de Produtos
-Sistema completo com controle de permissões - SEM LOOPS
+Com modal de visualização para perfil Visualizador
 """
 import streamlit as st
 import streamlit_antd_components as sac
@@ -14,7 +14,6 @@ import math
 def tela_produto():
     """Tela de gestão de produtos com controle de permissões"""
     
-    # Verificação de permissão
     if not AuthManager.has_permission('PRODUTOS', 'VISUALIZAR'):
         st.error("❌ Você não tem permissão para visualizar produtos")
         st.info(f"👤 Seu perfil atual: **{AuthManager.get_user_perfil()}**")
@@ -23,14 +22,11 @@ def tela_produto():
     # Inicialização
     if 'pagina_atual_produto' not in st.session_state:
         st.session_state.pagina_atual_produto = 1
-    
     if 'registros_por_pagina_produto' not in st.session_state:
         st.session_state.registros_por_pagina_produto = 10
-    
     if 'tipo_busca_produto' not in st.session_state:
         st.session_state.tipo_busca_produto = "nome"
     
-    # Título
     sac.divider(label='Gestão de Produtos', icon='box-seam-fill', align='center', color='green')
     
     # Filtros
@@ -48,23 +44,17 @@ def tela_produto():
             key='seg_tipo_busca_produto',
             readonly=False
         )
-        # SEM st.rerun() - Apenas atualiza session_state
         if tipo_busca.lower() != st.session_state.tipo_busca_produto:
             st.session_state.tipo_busca_produto = tipo_busca.lower()
             st.session_state.pagina_atual_produto = 1
-        
         tipo_busca_db = st.session_state.tipo_busca_produto
     
     with col2:
         st.caption("Digite para buscar:")
         placeholder = "Digite o código..." if tipo_busca == "Código" else "Digite o nome..."
         busca = st.text_input("", placeholder=placeholder, key='busca_produto', label_visibility="collapsed")
-        
-        # Inicializar busca_anterior se não existir
         if 'busca_anterior_produto' not in st.session_state:
             st.session_state.busca_anterior_produto = ""
-        
-        # SEM st.rerun() - Apenas resetar página
         if busca != st.session_state.busca_anterior_produto:
             st.session_state.pagina_atual_produto = 1
             st.session_state.busca_anterior_produto = busca
@@ -80,8 +70,6 @@ def tela_produto():
             readonly=False
         )
         registros_por_pagina = int(registros_label)
-        
-        # SEM st.rerun() - Apenas atualiza session_state
         if registros_por_pagina != st.session_state.registros_por_pagina_produto:
             st.session_state.registros_por_pagina_produto = registros_por_pagina
             st.session_state.pagina_atual_produto = 1
@@ -91,7 +79,7 @@ def tela_produto():
         if AuthManager.has_permission('PRODUTOS', 'CRIAR'):
             if st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, type="primary", key="btn_novo_produto"):
                 st.session_state.modal_add_produto = True
-                st.rerun()  # OK aqui
+                st.rerun()
         else:
             st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, disabled=True)
     
@@ -101,7 +89,6 @@ def tela_produto():
     total_produtos = db.contar_produtos(busca, tipo_busca_db)
     total_paginas = math.ceil(total_produtos / registros_por_pagina) if total_produtos > 0 else 1
     offset = (st.session_state.pagina_atual_produto - 1) * registros_por_pagina
-    
     produtos = db.listar_produtos(busca, tipo_busca_db, registros_por_pagina, offset)
     
     if total_produtos > 0:
@@ -117,20 +104,18 @@ def tela_produto():
                 jump=True,
                 key='pagination_produto_top'
             )
-            # SEM st.rerun() - Apenas atualiza
             if nova_pagina != st.session_state.pagina_atual_produto:
                 st.session_state.pagina_atual_produto = nova_pagina
     
     st.markdown("---")
     
-    # Ações em lote
+    # Ações
     col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 4])
-    
     with col_btn1:
         if AuthManager.has_permission('PRODUTOS', 'EXPORTAR'):
             if st.button(f"{ICONE_PDF} PDF", use_container_width=True, key="btn_pdf_produto"):
                 st.session_state.gerar_pdf_produtos = True
-                st.rerun()  # OK aqui
+                st.rerun()
         else:
             st.button(f"{ICONE_PDF} PDF", disabled=True, use_container_width=True)
     
@@ -141,7 +126,6 @@ def tela_produto():
         st.markdown("### 📋 Lista de Produtos")
         
         col1, col2, col3, col4 = st.columns([0.5, 4, 2, 1.5])
-        
         with col1:
             st.markdown("**ID**")
         with col2:
@@ -161,44 +145,50 @@ def tela_produto():
             
             with col1:
                 st.markdown(f"`#{produto[0]}`")
-            
             with col2:
                 st.write(produto[1])
-            
             with col3:
                 st.markdown(f"**R$ {float(produto[2]):,.2f}**")
             
             with col4:
-                col_btn1, col_btn2 = st.columns(2)
-                
-                with col_btn1:
+                # Se não pode editar NEM excluir, mostrar apenas botão VER
+                if not can_edit and not can_delete:
                     if st.button(
-                        f"{ICONE_EDITAR}",
-                        key=f"btn_edit_produto_{produto[0]}",
+                        "👁️ Ver",
+                        key=f"btn_view_produto_{produto[0]}",
                         use_container_width=True,
-                        disabled=not can_edit
+                        help="Ver detalhes do produto"
                     ):
-                        st.session_state.editar_produto_id = produto[0]
-                        st.rerun()  # OK aqui
-                
-                with col_btn2:
-                    if st.button(
-                        f"{ICONE_EXCLUIR}",
-                        key=f"btn_del_produto_{produto[0]}",
-                        use_container_width=True,
-                        type="secondary",
-                        disabled=not can_delete
-                    ):
-                        st.session_state.excluir_produto_id = produto[0]
-                        st.rerun()  # OK aqui
+                        st.session_state.visualizar_produto_id = produto[0]
+                        st.rerun()
+                else:
+                    # Botões normais
+                    col_btn1, col_btn2 = st.columns(2)
+                    
+                    with col_btn1:
+                        if st.button(
+                            f"{ICONE_EDITAR}",
+                            key=f"btn_edit_produto_{produto[0]}",
+                            use_container_width=True,
+                            disabled=not can_edit
+                        ):
+                            st.session_state.editar_produto_id = produto[0]
+                            st.rerun()
+                    
+                    with col_btn2:
+                        if st.button(
+                            f"{ICONE_EXCLUIR}",
+                            key=f"btn_del_produto_{produto[0]}",
+                            use_container_width=True,
+                            type="secondary",
+                            disabled=not can_delete
+                        ):
+                            st.session_state.excluir_produto_id = produto[0]
+                            st.rerun()
             
             st.divider()
     else:
-        sac.result(
-            label='Nenhum produto encontrado',
-            description='Ajuste os filtros de busca',
-            status='empty'
-        )
+        sac.result(label='Nenhum produto encontrado', description='Ajuste os filtros', status='empty')
     
     # Modais
     if 'modal_add_produto' in st.session_state and st.session_state.modal_add_produto:
@@ -216,7 +206,12 @@ def tela_produto():
             modal_confirmar_exclusao_produto(st.session_state.excluir_produto_id)
         del st.session_state.excluir_produto_id
     
-    # Gerar PDF
+    # NOVO: Modal de visualização
+    if 'visualizar_produto_id' in st.session_state:
+        modal_visualizar_produto(st.session_state.visualizar_produto_id)
+        del st.session_state.visualizar_produto_id
+    
+    # PDF
     if 'gerar_pdf_produtos' in st.session_state and st.session_state.gerar_pdf_produtos:
         if AuthManager.has_permission('PRODUTOS', 'EXPORTAR'):
             with st.spinner('📄 Gerando PDF...'):
@@ -225,7 +220,6 @@ def tela_produto():
                 pdf_buffer = gerar_relatorio_produtos_pdf(todos_produtos, filtros_info)
             
             st.success(f'✅ PDF gerado! {len(todos_produtos)} produto(s)')
-            
             st.download_button(
                 label="⬇️ Baixar PDF",
                 data=pdf_buffer,
@@ -234,12 +228,49 @@ def tela_produto():
                 use_container_width=True,
                 type="primary"
             )
-            
             AuthManager.audit_log("EXPORTAR_PRODUTOS", "PRODUTOS", f"Exportou {len(todos_produtos)} produto(s)")
-        
         st.session_state.pop('gerar_pdf_produtos', None)
 
-# Modais
+# ==================== MODAIS ====================
+
+@st.dialog("👁️ Detalhes do Produto")
+def modal_visualizar_produto(produto_id):
+    """Modal somente leitura para visualizadores"""
+    
+    produto = db.obter_produto(produto_id)
+    if not produto:
+        st.error("❌ Produto não encontrado")
+        return
+    
+    st.markdown("### 📦 Informações do Produto")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**ID:**")
+        st.info(f"`#{produto[0]}`")
+        
+        st.markdown("**Nome:**")
+        st.success(f"**{produto[1]}**")
+    
+    with col2:
+        st.markdown("**Preço:**")
+        st.success(f"**R$ {float(produto[2]):,.2f}**")
+        
+        st.markdown("**Status:**")
+        st.success("✅ Disponível")
+    
+    st.markdown("---")
+    
+    with st.expander("📊 Informações Adicionais", expanded=False):
+        st.caption("• Cadastrado em: —")
+        st.caption("• Última atualização: —")
+        st.caption("• Estoque atual: —")
+        st.caption("• Vendas totais: —")
+    
+    if st.button("✅ Fechar", use_container_width=True, type="primary"):
+        st.rerun()
+
 @st.dialog("➕ Adicionar Produto")
 def modal_adicionar_produto():
     with st.form("form_add_produto"):
@@ -330,7 +361,6 @@ def modal_confirmar_exclusao_produto(produto_id):
                 st.rerun()
             except Exception as e:
                 st.error(f"❌ Erro: {e}")
-    
     with col2:
         if st.button("❌ Cancelar", use_container_width=True):
             st.rerun()

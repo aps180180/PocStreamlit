@@ -1,6 +1,6 @@
 """
 Interface de Gestão de Clientes
-Sistema completo com controle de permissões - SEM LOOPS
+Com modal de visualização para perfil Visualizador
 """
 import streamlit as st
 import streamlit_antd_components as sac
@@ -15,7 +15,6 @@ import math
 def tela_cliente():
     """Tela de gestão de clientes com controle de permissões"""
     
-    # Verificação de permissão
     if not AuthManager.has_permission('CLIENTES', 'VISUALIZAR'):
         st.error("❌ Você não tem permissão para visualizar clientes")
         st.info(f"👤 Seu perfil atual: **{AuthManager.get_user_perfil()}**")
@@ -24,14 +23,11 @@ def tela_cliente():
     # Inicialização
     if 'pagina_atual_cliente' not in st.session_state:
         st.session_state.pagina_atual_cliente = 1
-    
     if 'registros_por_pagina_cliente' not in st.session_state:
         st.session_state.registros_por_pagina_cliente = 10
-    
     if 'tipo_busca_cliente' not in st.session_state:
         st.session_state.tipo_busca_cliente = "nome"
     
-    # Título
     sac.divider(label='Gestão de Clientes', icon='people-fill', align='center', color='blue')
     
     # Filtros
@@ -49,23 +45,17 @@ def tela_cliente():
             key='seg_tipo_busca_cliente',
             readonly=False
         )
-        # SEM st.rerun() - Apenas atualiza session_state
         if tipo_busca.lower() != st.session_state.tipo_busca_cliente:
             st.session_state.tipo_busca_cliente = tipo_busca.lower()
             st.session_state.pagina_atual_cliente = 1
-        
         tipo_busca_db = st.session_state.tipo_busca_cliente
     
     with col2:
         st.caption("Digite para buscar:")
         placeholder = "Digite o código..." if tipo_busca == "Código" else "Digite o nome..."
         busca = st.text_input("", placeholder=placeholder, key='busca_cliente', label_visibility="collapsed")
-        
-        # Inicializar busca_anterior se não existir
         if 'busca_anterior_cliente' not in st.session_state:
             st.session_state.busca_anterior_cliente = ""
-        
-        # SEM st.rerun() - Apenas resetar página
         if busca != st.session_state.busca_anterior_cliente:
             st.session_state.pagina_atual_cliente = 1
             st.session_state.busca_anterior_cliente = busca
@@ -81,8 +71,6 @@ def tela_cliente():
             readonly=False
         )
         registros_por_pagina = int(registros_label)
-        
-        # SEM st.rerun() - Apenas atualiza session_state
         if registros_por_pagina != st.session_state.registros_por_pagina_cliente:
             st.session_state.registros_por_pagina_cliente = registros_por_pagina
             st.session_state.pagina_atual_cliente = 1
@@ -92,7 +80,7 @@ def tela_cliente():
         if AuthManager.has_permission('CLIENTES', 'CRIAR'):
             if st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, type="primary", key="btn_novo_cliente"):
                 st.session_state.modal_add_cliente = True
-                st.rerun()  # OK aqui
+                st.rerun()
         else:
             st.button(f"{ICONE_ADICIONAR} Novo", use_container_width=True, disabled=True)
     
@@ -102,7 +90,6 @@ def tela_cliente():
     total_clientes = db.contar_clientes(busca, tipo_busca_db)
     total_paginas = math.ceil(total_clientes / registros_por_pagina) if total_clientes > 0 else 1
     offset = (st.session_state.pagina_atual_cliente - 1) * registros_por_pagina
-    
     clientes = db.listar_clientes(busca, tipo_busca_db, registros_por_pagina, offset)
     
     if total_clientes > 0:
@@ -118,20 +105,18 @@ def tela_cliente():
                 jump=True,
                 key='pagination_cliente_top'
             )
-            # SEM st.rerun() - Apenas atualiza
             if nova_pagina != st.session_state.pagina_atual_cliente:
                 st.session_state.pagina_atual_cliente = nova_pagina
     
     st.markdown("---")
     
-    # Ações em lote
+    # Ações
     col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 4])
-    
     with col_btn1:
         if AuthManager.has_permission('CLIENTES', 'EXPORTAR'):
             if st.button(f"{ICONE_PDF} PDF", use_container_width=True, key="btn_pdf_cliente"):
                 st.session_state.gerar_pdf_clientes = True
-                st.rerun()  # OK aqui
+                st.rerun()
         else:
             st.button(f"{ICONE_PDF} PDF", disabled=True, use_container_width=True)
     
@@ -142,7 +127,6 @@ def tela_cliente():
         st.markdown("### 📋 Lista de Clientes")
         
         col1, col2, col3, col4 = st.columns([0.5, 3, 3, 1.5])
-        
         with col1:
             st.markdown("**ID**")
         with col2:
@@ -162,44 +146,50 @@ def tela_cliente():
             
             with col1:
                 st.markdown(f"`#{cliente[0]}`")
-            
             with col2:
                 st.write(cliente[1])
-            
             with col3:
                 st.text(cliente[2] if cliente[2] else "—")
             
             with col4:
-                col_btn1, col_btn2 = st.columns(2)
-                
-                with col_btn1:
+                # Se não pode editar NEM excluir, mostrar apenas botão VER
+                if not can_edit and not can_delete:
                     if st.button(
-                        f"{ICONE_EDITAR}",
-                        key=f"btn_edit_cliente_{cliente[0]}",
+                        "👁️ Ver",
+                        key=f"btn_view_cliente_{cliente[0]}",
                         use_container_width=True,
-                        disabled=not can_edit
+                        help="Ver detalhes do cliente"
                     ):
-                        st.session_state.editar_cliente_id = cliente[0]
-                        st.rerun()  # OK aqui
-                
-                with col_btn2:
-                    if st.button(
-                        f"{ICONE_EXCLUIR}",
-                        key=f"btn_del_cliente_{cliente[0]}",
-                        use_container_width=True,
-                        type="secondary",
-                        disabled=not can_delete
-                    ):
-                        st.session_state.excluir_cliente_id = cliente[0]
-                        st.rerun()  # OK aqui
+                        st.session_state.visualizar_cliente_id = cliente[0]
+                        st.rerun()
+                else:
+                    # Botões normais
+                    col_btn1, col_btn2 = st.columns(2)
+                    
+                    with col_btn1:
+                        if st.button(
+                            f"{ICONE_EDITAR}",
+                            key=f"btn_edit_cliente_{cliente[0]}",
+                            use_container_width=True,
+                            disabled=not can_edit
+                        ):
+                            st.session_state.editar_cliente_id = cliente[0]
+                            st.rerun()
+                    
+                    with col_btn2:
+                        if st.button(
+                            f"{ICONE_EXCLUIR}",
+                            key=f"btn_del_cliente_{cliente[0]}",
+                            use_container_width=True,
+                            type="secondary",
+                            disabled=not can_delete
+                        ):
+                            st.session_state.excluir_cliente_id = cliente[0]
+                            st.rerun()
             
             st.divider()
     else:
-        sac.result(
-            label='Nenhum cliente encontrado',
-            description='Ajuste os filtros de busca',
-            status='empty'
-        )
+        sac.result(label='Nenhum cliente encontrado', description='Ajuste os filtros', status='empty')
     
     # Modais
     if 'modal_add_cliente' in st.session_state and st.session_state.modal_add_cliente:
@@ -217,7 +207,12 @@ def tela_cliente():
             modal_confirmar_exclusao_cliente(st.session_state.excluir_cliente_id)
         del st.session_state.excluir_cliente_id
     
-    # Gerar PDF
+    # NOVO: Modal de visualização
+    if 'visualizar_cliente_id' in st.session_state:
+        modal_visualizar_cliente(st.session_state.visualizar_cliente_id)
+        del st.session_state.visualizar_cliente_id
+    
+    # PDF
     if 'gerar_pdf_clientes' in st.session_state and st.session_state.gerar_pdf_clientes:
         if AuthManager.has_permission('CLIENTES', 'EXPORTAR'):
             with st.spinner('📄 Gerando PDF...'):
@@ -226,7 +221,6 @@ def tela_cliente():
                 pdf_buffer = gerar_relatorio_clientes_pdf(todos_clientes, filtros_info)
             
             st.success(f'✅ PDF gerado! {len(todos_clientes)} cliente(s)')
-            
             st.download_button(
                 label="⬇️ Baixar PDF",
                 data=pdf_buffer,
@@ -235,12 +229,48 @@ def tela_cliente():
                 use_container_width=True,
                 type="primary"
             )
-            
             AuthManager.audit_log("EXPORTAR_CLIENTES", "CLIENTES", f"Exportou {len(todos_clientes)} cliente(s)")
-        
         st.session_state.pop('gerar_pdf_clientes', None)
 
-# Modais
+# ==================== MODAIS ====================
+
+@st.dialog("👁️ Detalhes do Cliente")
+def modal_visualizar_cliente(cliente_id):
+    """Modal somente leitura para visualizadores"""
+    
+    cliente = db.obter_cliente(cliente_id)
+    if not cliente:
+        st.error("❌ Cliente não encontrado")
+        return
+    
+    st.markdown("### 📋 Informações do Cliente")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**ID:**")
+        st.info(f"`#{cliente[0]}`")
+        
+        st.markdown("**Nome:**")
+        st.success(f"**{cliente[1]}**")
+    
+    with col2:
+        st.markdown("**Email:**")
+        st.info(cliente[2] if cliente[2] else "Não informado")
+        
+        st.markdown("**Status:**")
+        st.success("✅ Ativo")
+    
+    st.markdown("---")
+    
+    with st.expander("📊 Informações Adicionais", expanded=False):
+        st.caption("• Cadastrado em: —")
+        st.caption("• Última atualização: —")
+        st.caption("• Total de pedidos: —")
+    
+    if st.button("✅ Fechar", use_container_width=True, type="primary"):
+        st.rerun()
+
 @st.dialog("➕ Adicionar Cliente")
 def modal_adicionar_cliente():
     with st.form("form_add_cliente"):
@@ -331,7 +361,6 @@ def modal_confirmar_exclusao_cliente(cliente_id):
                 st.rerun()
             except Exception as e:
                 st.error(f"❌ Erro: {e}")
-    
     with col2:
         if st.button("❌ Cancelar", use_container_width=True):
             st.rerun()
