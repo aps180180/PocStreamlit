@@ -1,17 +1,16 @@
 """
-Dashboard Principal do Sistema ERP - VERSÃO FINAL CORRIGIDA
+Página de Gestão de Produtos - VERSÃO FINAL CORRIGIDA
 """
 import streamlit as st
 from auth.auth_manager import AuthManager
-import ui.dashboard as dashboard_ui
-from db.models import criar_todas_tabelas, migrar_tabelas
 from utils.menu_builder import MenuBuilder
 from utils.custom_css import apply_custom_css
+import ui.produto as produto_ui
 
 # Configuração da página
 st.set_page_config(
-    page_title="Dashboard - Sistema ERP",
-    page_icon="📊",
+    page_title="Gestão de Produtos",
+    page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -19,22 +18,10 @@ st.set_page_config(
 # Aplicar CSS customizado
 apply_custom_css()
 
-# Criar tabelas
-try:
-    criar_todas_tabelas()
-    migrar_tabelas()
-except:
-    pass
-
 # Verificar autenticação
 if not AuthManager.is_authenticated():
-    st.warning("⚠️ Você não está autenticado")
-    st.info("👉 Faça login para acessar o sistema")
-    
-    if st.button("🔐 Ir para Login", type="primary"):
-        st.switch_page("pages/00_Login.py")
-    
-    st.stop()
+    st.error("❌ Você precisa estar autenticado")
+    st.switch_page("pages/00_Login.py")
 
 # ========================================
 # SIDEBAR COM MENU HIERÁRQUICO
@@ -51,11 +38,11 @@ with st.sidebar:
     st.info(f"**{AuthManager.get_user_name()}**")
     st.caption(f"🎭 {AuthManager.get_user_perfil()}")
     
-    if st.button("🚪 Sair", use_container_width=True, type="secondary"):
+    if st.button("🚪 Sair", use_container_width=True, type="secondary", key="btn_logout_produtos"):
         AuthManager.logout()
         st.switch_page("pages/00_Login.py")
 
 # ========================================
 # CONTEÚDO PRINCIPAL
 # ========================================
-dashboard_ui.tela_dashboard()
+produto_ui.tela_produto()

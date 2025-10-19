@@ -1,17 +1,16 @@
 """
-Dashboard Principal do Sistema ERP - VERSÃO FINAL CORRIGIDA
+Página de Administração de Usuários - VERSÃO FINAL CORRIGIDA
 """
 import streamlit as st
 from auth.auth_manager import AuthManager
-import ui.dashboard as dashboard_ui
-from db.models import criar_todas_tabelas, migrar_tabelas
 from utils.menu_builder import MenuBuilder
 from utils.custom_css import apply_custom_css
+import ui.usuarios as usuarios_ui
 
 # Configuração da página
 st.set_page_config(
-    page_title="Dashboard - Sistema ERP",
-    page_icon="📊",
+    page_title="Administração de Usuários",
+    page_icon="👤",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -19,21 +18,15 @@ st.set_page_config(
 # Aplicar CSS customizado
 apply_custom_css()
 
-# Criar tabelas
-try:
-    criar_todas_tabelas()
-    migrar_tabelas()
-except:
-    pass
-
 # Verificar autenticação
 if not AuthManager.is_authenticated():
-    st.warning("⚠️ Você não está autenticado")
-    st.info("👉 Faça login para acessar o sistema")
-    
-    if st.button("🔐 Ir para Login", type="primary"):
-        st.switch_page("pages/00_Login.py")
-    
+    st.error("❌ Você precisa estar autenticado")
+    st.switch_page("pages/00_Login.py")
+
+# Verificar permissão (apenas Admin)
+if not AuthManager.has_permission('USUARIOS', 'VISUALIZAR'):
+    st.error("❌ Sem permissão para acessar esta página")
+    st.info(f"Seu perfil: {AuthManager.get_user_perfil()}")
     st.stop()
 
 # ========================================
@@ -51,11 +44,11 @@ with st.sidebar:
     st.info(f"**{AuthManager.get_user_name()}**")
     st.caption(f"🎭 {AuthManager.get_user_perfil()}")
     
-    if st.button("🚪 Sair", use_container_width=True, type="secondary"):
+    if st.button("🚪 Sair", use_container_width=True, type="secondary", key="btn_logout_usuarios"):
         AuthManager.logout()
         st.switch_page("pages/00_Login.py")
 
 # ========================================
 # CONTEÚDO PRINCIPAL
 # ========================================
-dashboard_ui.tela_dashboard()
+usuarios_ui.tela_usuarios()

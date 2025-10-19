@@ -1,128 +1,54 @@
 """
-Página de Login do Sistema
+Página de Login
 """
 import streamlit as st
-import streamlit_antd_components as sac
 from auth.auth_manager import AuthManager
-from config.empresa import SISTEMA_NOME, SISTEMA_VERSAO, SISTEMA_SUBTITULO
-from datetime import datetime
+from utils.custom_css import apply_login_css
 
-# Configuração da página
 st.set_page_config(
-    page_title=f"Login - {SISTEMA_NOME}",
+    page_title="Login - Sistema ERP",
     page_icon="🔐",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed"  # ✅ FECHADA no login
 )
 
-# CSS customizado para página de login
-st.markdown("""
-<style>
-    /* Ocultar menu e header */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Ocultar sidebar na página de login */
-    [data-testid="stSidebar"] {display: none;}
-    
-    /* Centralizar conteúdo */
-    .block-container {
-        padding-top: 2rem;
-        max-width: 500px;
-    }
-</style>
-""", unsafe_allow_html=True)
+# CSS específico do login
+apply_login_css()
 
-# Verificar se já está autenticado
+# Verificar se já está logado
 if AuthManager.is_authenticated():
-    st.success("✅ Você já está logado!")
-    st.info("👉 Redirecionando para o dashboard...")
     st.switch_page("app.py")
-    st.stop()
 
-# Container principal
-col1, col2, col3 = st.columns([1, 3, 1])
+st.markdown("# 🔐 Login")
+st.markdown("### Sistema ERP")
 
-with col2:
-    # Logo/Título
-    st.markdown(f"<h1 style='text-align: center;'>🔐</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h2 style='text-align: center;'>{SISTEMA_NOME}</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: center; color: #666;'>{SISTEMA_SUBTITULO}</p>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: center; color: #999; font-size: 0.8rem;'>v{SISTEMA_VERSAO}</p>", unsafe_allow_html=True)
+with st.form("login_form"):
+    email = st.text_input("📧 Email", placeholder="seu@email.com")
+    senha = st.text_input("🔑 Senha", type="password", placeholder="Sua senha")
     
-    st.markdown("---")
+    col1, col2 = st.columns(2)
     
-    # Formulário de login
-    with st.form("login_form"):
-        st.markdown("#### 🔑 Acesso ao Sistema")
-        
-        username = st.text_input(
-            "Usuário",
-            placeholder="Digite seu usuário",
-            help="Use 'admin' para primeiro acesso"
-        )
-        
-        password = st.text_input(
-            "Senha",
-            type="password",
-            placeholder="Digite sua senha",
-            help="Use 'admin123' para primeiro acesso"
-        )
-        
-        remember = st.checkbox("Lembrar-me neste dispositivo", value=False)
-        
-        col_btn1, col_btn2 = st.columns(2)
-        
-        with col_btn1:
-            submit = st.form_submit_button(
-                "🚀 Entrar",
-                use_container_width=True,
-                type="primary"
-            )
-        
-        with col_btn2:
-            if st.form_submit_button(
-                "❌ Limpar",
-                use_container_width=True
-            ):
-                st.rerun()
+    with col1:
+        submit = st.form_submit_button("🚀 Entrar", use_container_width=True, type="primary")
     
-    # Processar login
+    with col2:
+        st.form_submit_button("❌ Limpar", use_container_width=True)
+    
     if submit:
-        if not username or not password:
-            st.error("❌ Preencha usuário e senha")
-        else:
-            with st.spinner("🔄 Autenticando..."):
-                success, message = AuthManager.login(username, password)
+        if email and senha:
+            sucesso, mensagem = AuthManager.login(email, senha)
+            
+            if sucesso:
+                st.success(mensagem)
+                st.balloons()
                 
-                if success:
-                    st.success(f"✅ {message}")
-                    st.balloons()
-                    st.info("👉 Redirecionando para o dashboard...")
-                    st.switch_page("app.py")
-                else:
-                    st.error(f"❌ {message}")
-    
-    st.markdown("---")
-    
-    # Informações adicionais
-    with st.expander("ℹ️ Primeiro Acesso"):
-        st.markdown("""
-        **Credenciais padrão:**
-        - **Usuário:** admin
-        - **Senha:** admin123
-        
-        ⚠️ **Importante:** Altere a senha após o primeiro acesso!
-        """)
-    
-    with st.expander("🆘 Esqueci minha senha"):
-        st.info("Entre em contato com o administrador do sistema")
-    
-    # Rodapé
-    st.markdown("---")
-    ano_atual = datetime.now().year
-    st.markdown(
-        f"<p style='text-align: center; color: #999; font-size: 0.8rem;'>© {ano_atual} {SISTEMA_NOME} - Todos os direitos reservados</p>",
-        unsafe_allow_html=True
-    )
+                import time
+                time.sleep(1)
+                st.switch_page("app.py")
+            else:
+                st.error(mensagem)
+        else:
+            st.warning("⚠️ Preencha email e senha")
+
+st.markdown("---")
+st.info("💡 **Credenciais padrão:**\n\n📧 admin@sistema.com\n\n🔑 admin123")

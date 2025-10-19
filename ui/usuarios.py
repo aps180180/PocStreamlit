@@ -1,478 +1,285 @@
 """
-Interface de Gestão de Usuários - CRUD Completo
-Inclui: Criar, Editar, Excluir e Alterar Senha
+Interface de Gestão de Usuários - VERSÃO DEFINITIVA
 """
 import streamlit as st
-from db.auth_models import (
-    listar_usuarios,
-    contar_usuarios,
-    listar_perfis,
-    obter_usuario,
-    inserir_usuario,
-    atualizar_usuario,
-    excluir_usuario,
-    excluir_usuario_permanente,  # ADICIONAR
-    alterar_senha_usuario,
-    verificar_login_disponivel,
-    verificar_email_disponivel,
-    execute_query  # ADICIONAR
-)
-
+from db.models import Usuario, Perfil
 from auth.auth_manager import AuthManager
-from auth.password import hash_password, verify_password
-from utils.validacao import validar_email
-import math
-import re
+from auth.password import hash_password
 
-# ==================== MODAIS ====================
 
-@st.dialog("➕ Adicionar Novo Usuário")
+def tela_usuarios():
+    """Renderiza tela de gestão de usuários"""
+    
+    if not AuthManager.has_permission('USUARIOS', 'VISUALIZAR'):
+        st.error("❌ Sem permissão para visualizar usuários")
+        return
+    
+    st.markdown("# 👤 Administração de Usuários")
+    
+    # ========================================
+    # LINHA 1: LABELS DOS FILTROS
+    # ========================================
+    col1, col2, col3 = st.columns([1.5, 5, 1])
+    
+    col1.markdown("**Buscar por**")
+    col2.markdown("**Termo de busca**")
+    col3.markdown("**Por página**")
+    
+    # ========================================
+    # LINHA 2: FILTROS
+    # ========================================
+    with col1:
+        tipo_busca = st.selectbox(
+            "tipo", 
+            ["Nome"], 
+            key="tipo_busca_user",
+            label_visibility="collapsed"
+        )
+    
+    with col2:
+        busca = st.text_input(
+            "busca", 
+            placeholder="🔍 Nome do usuário...", 
+            label_visibility="collapsed", 
+            key="busca_user"
+        )
+    
+    with col3:
+        registros_por_pagina = st.selectbox(
+            "regs", 
+            [25, 50, 100], 
+            index=0, 
+            label_visibility="collapsed", 
+            key="reg_user"
+        )
+    
+    # ========================================
+    # LINHA 3: BOTÃO NOVO USUÁRIO
+    # ========================================
+    if AuthManager.has_permission('USUARIOS', 'CRIAR'):
+        if st.button("➕ Novo Usuário", type="primary", use_container_width=False, key="btn_novo_usuario"):
+            st.session_state.modal_add_usuario = True
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # ========================================
+    # BUSCAR E LISTAR USUÁRIOS
+    # ========================================
+    try:
+        # Usar métodos corretos: buscar(busca, limit, offset) e contar(busca)
+        usuarios = Usuario.buscar(busca if busca else "", 9999, 0)
+        total_usuarios = Usuario.contar(busca if busca else "")
+        
+        st.caption(f"{total_usuarios} usuário(s)")
+        
+        if usuarios:
+            # Paginação manual
+            if 'pagina_atual_usuario' not in st.session_state:
+                st.session_state.pagina_atual_usuario = 1
+            
+            total_paginas = (total_usuarios + registros_por_pagina - 1) // registros_por_pagina
+            inicio = (st.session_state.pagina_atual_usuario - 1) * registros_por_pagina
+            fim = inicio + registros_por_pagina
+            usuarios_pagina = usuarios[inicio:fim]
+            
+            # Cabeçalho da tabela
+            col1, col2, col3, col4, col5 = st.columns([0.5, 3, 3, 2, 1])
+            col1.markdown("**ID**")
+            col2.markdown("**Nome**")
+            col3.markdown("**Email**")
+            col4.markdown("**Perfil**")
+            col5.markdown("**Ações**")
+            
+            st.markdown("---")
+            
+            # Linhas da tabela
+            # Estrutura: ID, NOME, EMAIL, PERFIL_ID, ATIVO, PERFIL_NOME
+            for usuario in usuarios_pagina:
+                col1, col2, col3, col4, col5 = st.columns([0.5, 3, 3, 2, 1])
+                
+                col1.caption(f"#{usuario[0]}")  # ID
+                col2.write(usuario[1])  # NOME
+                col3.caption(usuario[2] if usuario[2] else "—")  # EMAIL
+                col4.caption(usuario[5] if len(usuario) > 5 and usuario[5] else "—")  # PERFIL_NOME
+                
+                with col5:
+                    c1, c2 = st.columns(2)
+                    
+                    with c1:
+                        if AuthManager.has_permission('USUARIOS', 'EDITAR'):
+                            if st.button("✏️", key=f"edit_user_{usuario[0]}", help="Editar"):
+                                st.session_state.editar_usuario_id = usuario[0]
+                                st.rerun()
+                    
+                    with c2:
+                        if AuthManager.has_permission('USUARIOS', 'DESATIVAR'):
+                            if st.button("🗑️", key=f"del_user_{usuario[0]}", help="Desativar"):
+                                st.session_state.desativar_usuario_id = usuario[0]
+                                st.rerun()
+            
+            # Paginação
+            if total_paginas > 1:
+                st.markdown("---")
+                col1, col2, col3 = st.columns([1, 2, 1])
+                
+                with col1:
+                    if st.button("⬅️ Anterior", disabled=st.session_state.pagina_atual_usuario == 1, key="pag_ant_user"):
+                        st.session_state.pagina_atual_usuario -= 1
+                        st.rerun()
+                
+                with col2:
+                    st.markdown(f"<center>Página {st.session_state.pagina_atual_usuario}/{total_paginas}</center>", unsafe_allow_html=True)
+                
+                with col3:
+                    if st.button("Próxima ➡️", disabled=st.session_state.pagina_atual_usuario == total_paginas, key="pag_prox_user"):
+                        st.session_state.pagina_atual_usuario += 1
+                        st.rerun()
+        else:
+            st.info("📭 Nenhum usuário encontrado")
+    
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar usuários: {e}")
+        import traceback
+        st.code(traceback.format_exc())
+    
+    # ========================================
+    # MODAIS
+    # ========================================
+    if st.session_state.get('modal_add_usuario'):
+        modal_adicionar_usuario()
+        st.session_state.modal_add_usuario = False
+    
+    if 'editar_usuario_id' in st.session_state:
+        modal_editar_usuario(st.session_state.editar_usuario_id)
+        del st.session_state.editar_usuario_id
+    
+    if 'desativar_usuario_id' in st.session_state:
+        modal_desativar_usuario(st.session_state.desativar_usuario_id)
+        del st.session_state.desativar_usuario_id
+
+
+@st.dialog("➕ Novo Usuário")
 def modal_adicionar_usuario():
-    """Modal para adicionar novo usuário"""
+    """Modal para adicionar usuário"""
+    # Buscar perfis
+    perfis = Perfil.listar_todos()
+    perfis_dict = {perfil[1]: perfil[0] for perfil in perfis}
     
-    st.markdown("Preencha os dados do novo usuário:")
-    
-    with st.form("form_adicionar_usuario", clear_on_submit=False):
-        perfis = listar_perfis()
-        perfis_dict = {f"{p[1]}": p[0] for p in perfis}
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            login = st.text_input("Login *", placeholder="usuario123", max_chars=50)
-            nome = st.text_input("Nome Completo *", placeholder="João da Silva", max_chars=100)
-            senha = st.text_input("Senha *", type="password", placeholder="Mínimo 6 caracteres", max_chars=50)
-        
-        with col2:
-            email = st.text_input("Email", placeholder="usuario@empresa.com", max_chars=100)
-            perfil_nome = st.selectbox("Perfil *", options=list(perfis_dict.keys()))
-            senha_confirma = st.text_input("Confirmar Senha *", type="password", max_chars=50)
-        
-        st.caption("* Campos obrigatórios")
+    with st.form("form_add_usuario"):
+        nome = st.text_input("Nome *", placeholder="Nome completo")
+        email = st.text_input("Email *", placeholder="email@exemplo.com")
+        senha = st.text_input("Senha *", type="password", placeholder="Mínimo 6 caracteres")
+        perfil_nome = st.selectbox("Perfil *", list(perfis_dict.keys()))
         
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
-            submit = st.form_submit_button("💾 Salvar", use_container_width=True, type="primary")
+            submitted = st.form_submit_button("💾 Salvar", type="primary", use_container_width=True)
         with col_btn2:
             if st.form_submit_button("❌ Cancelar", use_container_width=True):
                 st.rerun()
         
-        if submit:
-            erros = []
-            
-            if not login or not nome or not senha or not senha_confirma:
-                erros.append("❌ Preencha todos os campos obrigatórios")
-            if login and len(login) < 3:
-                erros.append("❌ Login deve ter pelo menos 3 caracteres")
-            if login and not re.match(r'^[a-zA-Z0-9_]+$', login):
-                erros.append("❌ Login: apenas letras, números e underscore")
-            if senha and len(senha) < 6:
-                erros.append("❌ Senha deve ter pelo menos 6 caracteres")
-            if senha != senha_confirma:
-                erros.append("❌ As senhas não conferem")
-            if email and not validar_email(email):
-                erros.append("❌ Email inválido")
-            if login and not verificar_login_disponivel(login):
-                erros.append("❌ Login já está em uso")
-            if email and not verificar_email_disponivel(email):
-                erros.append("❌ Email já está em uso")
-            
-            if erros:
-                for erro in erros:
-                    st.error(erro)
+        if submitted:
+            if nome and email and senha:
+                if len(senha) < 6:
+                    st.warning("⚠️ Senha deve ter no mínimo 6 caracteres!")
+                else:
+                    try:
+                        perfil_id = perfis_dict[perfil_nome]
+                        usuario_id = Usuario.criar(nome, email, senha, perfil_id)
+                        st.success(f"✅ Usuário '{nome}' criado! ID: {usuario_id}")
+                        AuthManager.audit_log("CRIAR_USUARIO", "USUARIOS", f"Criou usuário: {nome}")
+                        import time
+                        time.sleep(1)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Erro: {e}")
             else:
-                try:
-                    senha_hash = hash_password(senha)
-                    perfil_id = perfis_dict[perfil_nome]
-                    usuario_id = inserir_usuario(login, nome, email, senha_hash, perfil_id)
-                    
-                    AuthManager.audit_log("CRIAR_USUARIO", "USUARIOS", f"Criou: {login} (ID: {usuario_id})")
-                    
-                    st.success(f"✅ Usuário **{login}** criado com sucesso!")
-                    st.balloons()
-                    
-                    import time
-                    time.sleep(2)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Erro: {e}")
+                st.warning("⚠️ Preencha todos os campos obrigatórios!")
+
 
 @st.dialog("✏️ Editar Usuário")
 def modal_editar_usuario(usuario_id):
     """Modal para editar usuário"""
-    
-    usuario = obter_usuario(usuario_id)
+    usuario = Usuario.find_by_id(usuario_id)
     if not usuario:
         st.error("❌ Usuário não encontrado")
         return
     
-    st.markdown(f"Editando: **{usuario[2]}** (`{usuario[1]}`)")
+    # Buscar perfis
+    perfis = Perfil.listar_todos()
+    perfis_dict = {perfil[1]: perfil[0] for perfil in perfis}
     
-    with st.form("form_editar_usuario"):
-        perfis = listar_perfis()
-        perfis_dict = {f"{p[1]}": p[0] for p in perfis}
-        perfil_atual = usuario[5]
+    # Perfil atual
+    perfil_atual = Perfil.find_by_id(usuario[4])
+    perfil_atual_nome = perfil_atual[1] if perfil_atual else list(perfis_dict.keys())[0]
+    
+    with st.form("form_edit_usuario"):
+        nome = st.text_input("Nome *", value=usuario[1])
+        email = st.text_input("Email *", value=usuario[2])
+        perfil_nome = st.selectbox("Perfil *", list(perfis_dict.keys()), 
+                                   index=list(perfis_dict.keys()).index(perfil_atual_nome) if perfil_atual_nome in perfis_dict else 0)
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.text_input("Login", value=usuario[1], disabled=True)
-            nome = st.text_input("Nome *", value=usuario[2], max_chars=100)
-        
-        with col2:
-            email = st.text_input("Email", value=usuario[3] or "", max_chars=100)
-            perfil_nome = st.selectbox(
-                "Perfil *",
-                options=list(perfis_dict.keys()),
-                index=list(perfis_dict.keys()).index(perfil_atual) if perfil_atual in perfis_dict.keys() else 0
-            )
-        
-        ativo = st.checkbox("✅ Usuário Ativo", value=(usuario[6] == 'S'))
+        st.caption("💡 Deixe em branco para manter a senha atual")
+        nova_senha = st.text_input("Nova Senha", type="password", placeholder="Deixe vazio para não alterar")
         
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
-            submit = st.form_submit_button("💾 Salvar", use_container_width=True, type="primary")
+            submitted = st.form_submit_button("💾 Salvar", type="primary", use_container_width=True)
         with col_btn2:
             if st.form_submit_button("❌ Cancelar", use_container_width=True):
                 st.rerun()
         
-        if submit:
-            erros = []
-            if not nome:
-                erros.append("❌ Nome é obrigatório")
-            if email and not validar_email(email):
-                erros.append("❌ Email inválido")
-            if email and not verificar_email_disponivel(email, usuario_id):
-                erros.append("❌ Email em uso")
-            
-            if erros:
-                for erro in erros:
-                    st.error(erro)
-            else:
+        if submitted:
+            if nome and email:
                 try:
                     perfil_id = perfis_dict[perfil_nome]
-                    ativo_char = 'S' if ativo else 'N'
-                    atualizar_usuario(usuario_id, nome, email, perfil_id, ativo_char)
                     
-                    AuthManager.audit_log("EDITAR_USUARIO", "USUARIOS", f"Editou ID: {usuario_id}")
-                    st.success("✅ Atualizado!")
+                    # Atualizar dados básicos
+                    Usuario.atualizar(usuario_id, nome, email, perfil_id)
                     
+                    # Atualizar senha se fornecida
+                    if nova_senha:
+                        if len(nova_senha) < 6:
+                            st.warning("⚠️ Senha deve ter no mínimo 6 caracteres!")
+                            return
+                        Usuario.atualizar_senha(usuario_id, nova_senha)
+                    
+                    st.success(f"✅ Usuário '{nome}' atualizado!")
+                    AuthManager.audit_log("EDITAR_USUARIO", "USUARIOS", f"Editou usuário ID: {usuario_id}")
                     import time
                     time.sleep(1)
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Erro: {e}")
-
-@st.dialog("🔐 Alterar Senha")
-def modal_alterar_senha(usuario_id):
-    """Modal para alterar senha"""
-    
-    usuario = obter_usuario(usuario_id)
-    if not usuario:
-        st.error("❌ Usuário não encontrado")
-        return
-    
-    is_self = usuario_id == AuthManager.get_user_id()
-    st.markdown(f"Senha de: **{usuario[2]}** (`{usuario[1]}`)")
-    
-    with st.form("form_alterar_senha", clear_on_submit=True):
-        if is_self:
-            senha_atual = st.text_input("Senha Atual *", type="password")
-        
-        nova_senha = st.text_input("Nova Senha *", type="password", placeholder="Mínimo 6 caracteres")
-        confirma_senha = st.text_input("Confirmar *", type="password")
-        
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            submit = st.form_submit_button("🔑 Alterar", use_container_width=True, type="primary")
-        with col_btn2:
-            if st.form_submit_button("❌ Cancelar", use_container_width=True):
-                st.rerun()
-        
-        if submit:
-            erros = []
-            if is_self and not senha_atual:
-                erros.append("❌ Digite senha atual")
-            if not nova_senha or not confirma_senha:
-                erros.append("❌ Preencha todos os campos")
-            if len(nova_senha) < 6:
-                erros.append("❌ Mínimo 6 caracteres")
-            if nova_senha != confirma_senha:
-                erros.append("❌ Senhas não conferem")
-            
-            if is_self and senha_atual:
-                from db.auth_models import obter_usuario_por_login
-                user_data = obter_usuario_por_login(st.session_state.user_login)
-                if user_data and not verify_password(senha_atual, user_data[4]):
-                    erros.append("❌ Senha atual incorreta")
-            
-            if erros:
-                for erro in erros:
-                    st.error(erro)
             else:
-                try:
-                    senha_hash = hash_password(nova_senha)
-                    alterar_senha_usuario(usuario_id, senha_hash)
-                    AuthManager.audit_log("ALTERAR_SENHA", "USUARIOS", f"ID: {usuario_id}")
-                    st.success("✅ Senha alterada!")
-                    
-                    if is_self:
-                        st.info("🔄 Você será desconectado")
-                        import time
-                        time.sleep(2)
-                        AuthManager.logout()
-                        st.switch_page("pages/00_Login.py")
-                    else:
-                        import time
-                        time.sleep(1)
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Erro: {e}")
+                st.warning("⚠️ Preencha nome e email!")
 
-@st.dialog("⚠️ Confirmar Exclusão")
-def modal_confirmar_exclusao(usuario_id):
-    """Modal de confirmação de exclusão com opções"""
-    
-    usuario = obter_usuario(usuario_id)
+
+@st.dialog("⚠️ Desativar Usuário")
+def modal_desativar_usuario(usuario_id):
+    """Modal para confirmar desativação"""
+    usuario = Usuario.find_by_id(usuario_id)
     if not usuario:
         st.error("❌ Usuário não encontrado")
         return
     
-    st.warning("⚠️ Escolha o tipo de exclusão:")
-    st.markdown(f"**Usuário:** {usuario[2]} (`{usuario[1]}`)")
-    st.markdown(f"**Perfil:** {usuario[5]}")
-    
-    # Verificar se tem logs
-    result = execute_query(
-        "SELECT COUNT(*) FROM AUDIT_LOG WHERE USUARIO_ID = ?",
-        (usuario_id,),
-        fetch_one=True
-    )
-    total_logs = result[0] if result else 0
-    
-    if total_logs > 0:
-        st.info(f"ℹ️ Este usuário possui **{total_logs} registro(s)** no log de auditoria")
-    
-    st.markdown("---")
-    
-    # Escolher tipo de exclusão
-    tipo_exclusao = st.radio(
-        "Tipo de exclusão:",
-        options=[
-            "🔒 Desativar usuário (Recomendado)",
-            "🗑️ Excluir permanentemente (inclui logs)"
-        ],
-        index=0,
-        help="Desativar mantém o histórico de auditoria"
-    )
-    
-    st.markdown("---")
-    
-    if "Desativar" in tipo_exclusao:
-        st.warning("O usuário será **DESATIVADO** mas não excluído do banco.")
-        st.caption("✓ Login será bloqueado")
-        st.caption("✓ Histórico de ações será mantido")
-        st.caption("✓ Pode ser reativado depois")
-        
-        palavra_confirmacao = "DESATIVAR"
-    else:
-        st.error("⚠️ ATENÇÃO: Exclusão permanente!")
-        st.caption(f"✗ Usuário será removido do banco")
-        st.caption(f"✗ {total_logs} registro(s) de auditoria serão perdidos")
-        st.caption(f"✗ Esta ação NÃO pode ser desfeita")
-        
-        palavra_confirmacao = "EXCLUIR"
-    
-    confirma = st.text_input(
-        f"Digite '{palavra_confirmacao}' para confirmar:",
-        placeholder=palavra_confirmacao,
-        max_chars=10
-    )
+    st.warning(f"⚠️ Tem certeza que deseja desativar o usuário **{usuario[1]}**?")
+    st.caption("O usuário não poderá mais fazer login no sistema.")
     
     col1, col2 = st.columns(2)
-    
     with col1:
-        if st.button(
-            f"✓ Confirmar {palavra_confirmacao.title()}",
-            use_container_width=True,
-            type="primary",
-            disabled=(confirma != palavra_confirmacao)
-        ):
+        if st.button("🗑️ Sim, desativar", type="primary", use_container_width=True):
             try:
-                if "Desativar" in tipo_exclusao:
-                    # Soft delete
-                    excluir_usuario(usuario_id)
-                    
-                    AuthManager.audit_log(
-                        "DESATIVAR_USUARIO",
-                        "USUARIOS",
-                        f"Desativou usuário: {usuario[1]} (ID: {usuario_id})"
-                    )
-                    
-                    st.success(f"✅ Usuário **{usuario[1]}** desativado com sucesso!")
-                else:
-                    # Hard delete
-                    excluir_usuario_permanente(usuario_id)
-                    
-                    AuthManager.audit_log(
-                        "EXCLUIR_USUARIO_PERMANENTE",
-                        "USUARIOS",
-                        f"Excluiu permanentemente: {usuario[1]} (ID: {usuario_id})"
-                    )
-                    
-                    st.success(f"✅ Usuário **{usuario[1]}** excluído permanentemente!")
-                
+                Usuario.desativar(usuario_id)
+                st.success(f"✅ Usuário '{usuario[1]}' desativado!")
+                AuthManager.audit_log("DESATIVAR_USUARIO", "USUARIOS", f"Desativou usuário: {usuario[1]}")
                 import time
-                time.sleep(1.5)
+                time.sleep(1)
                 st.rerun()
-                
-            except ValueError as e:
-                st.error(f"❌ {e}")
             except Exception as e:
                 st.error(f"❌ Erro: {e}")
     
     with col2:
         if st.button("❌ Cancelar", use_container_width=True):
             st.rerun()
-
-# ==================== TELA PRINCIPAL ====================
-
-def tela_usuarios():
-    """Tela principal com CRUD completo"""
-    
-    if 'pagina_atual_usuario' not in st.session_state:
-        st.session_state.pagina_atual_usuario = 1
-    if 'registros_por_pagina_usuario' not in st.session_state:
-        st.session_state.registros_por_pagina_usuario = 10
-    if 'tipo_busca_usuario' not in st.session_state:
-        st.session_state.tipo_busca_usuario = "nome"
-    
-    st.markdown("## 👥 Gestão de Usuários")
-    st.markdown("---")
-    
-    # Filtros
-    col1, col2, col3, col4 = st.columns([2, 4, 2, 2])
-    
-    with col1:
-        tipo_busca = st.radio("Buscar por:", ["Nome", "Login"], horizontal=True, key='radio_tipo')
-        tipo_busca_db = tipo_busca.lower()
-        if tipo_busca_db != st.session_state.tipo_busca_usuario:
-            st.session_state.tipo_busca_usuario = tipo_busca_db
-            st.session_state.pagina_atual_usuario = 1
-    
-    with col2:
-        busca = st.text_input("Buscar:", placeholder=f"Digite o {tipo_busca.lower()}...", key='input_busca')
-        if busca and 'busca_anterior' in st.session_state and busca != st.session_state.busca_anterior:
-            st.session_state.pagina_atual_usuario = 1
-        st.session_state.busca_anterior = busca
-    
-    with col3:
-        registros = st.selectbox("Por página:", [10, 25, 50], key='select_reg')
-        if registros != st.session_state.registros_por_pagina_usuario:
-            st.session_state.registros_por_pagina_usuario = registros
-            st.session_state.pagina_atual_usuario = 1
-    
-    with col4:
-        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-        if AuthManager.has_permission('USUARIOS', 'CRIAR'):
-            if st.button("➕ Novo", use_container_width=True, type="primary"):
-                modal_adicionar_usuario()
-        else:
-            st.button("➕ Novo", disabled=True, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # Paginação
-    total = contar_usuarios(busca, tipo_busca_db)
-    total_pag = math.ceil(total / registros) if total > 0 else 1
-    offset = (st.session_state.pagina_atual_usuario - 1) * registros
-    
-    try:
-        usuarios = listar_usuarios(busca, tipo_busca_db, registros, offset)
-    except Exception as e:
-        st.error(f"❌ Erro: {e}")
-        usuarios = []
-    
-    if total > 0:
-        col_info, col_pag = st.columns([2, 3])
-        with col_info:
-            st.markdown(f"**{offset+1}-{min(offset+registros, total)} de {total}** | Pág. {st.session_state.pagina_atual_usuario}/{total_pag}")
-        with col_pag:
-            c1, c2, c3 = st.columns([1, 2, 1])
-            with c1:
-                if st.button("◀ Ant.", disabled=(st.session_state.pagina_atual_usuario==1)):
-                    st.session_state.pagina_atual_usuario -= 1
-                    st.rerun()
-            with c2:
-                st.markdown(f"<div style='text-align:center;padding-top:8px;'>Pág {st.session_state.pagina_atual_usuario}</div>", unsafe_allow_html=True)
-            with c3:
-                if st.button("Prox. ▶", disabled=(st.session_state.pagina_atual_usuario==total_pag)):
-                    st.session_state.pagina_atual_usuario += 1
-                    st.rerun()
-    
-    st.markdown("---")
-    
-    # Listagem
-    if usuarios:
-        col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5, 1.2, 2.5, 2.5, 1.5, 1, 2])
-        with col1:
-            st.markdown("**ID**")
-        with col2:
-            st.markdown("**Login**")
-        with col3:
-            st.markdown("**Nome**")
-        with col4:
-            st.markdown("**Email**")
-        with col5:
-            st.markdown("**Perfil**")
-        with col6:
-            st.markdown("**Status**")
-        with col7:
-            st.markdown("**Ações**")
-        
-        st.markdown("---")
-        
-        for u in usuarios:
-            col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5, 1.2, 2.5, 2.5, 1.5, 1, 2])
-            with col1:
-                st.markdown(f"`#{u[0]}`")
-            with col2:
-                st.write(u[1])
-            with col3:
-                st.write(u[2])
-            with col4:
-                st.text(u[3] or "—")
-            with col5:
-                p = u[4] if len(u) > 4 else "N/A"
-                if p == 'Administrador':
-                    st.markdown("🔴 **Admin**")
-                elif p == 'Operador':
-                    st.markdown("🟡 **Oper.**")
-                else:
-                    st.markdown("🔵 **Vis.**")
-            with col6:
-                st.markdown("✅" if (u[5] if len(u)>5 else 'N')=='S' else "❌")
-            with col7:
-                can_edit = AuthManager.has_permission('USUARIOS', 'EDITAR')
-                can_del = AuthManager.has_permission('USUARIOS', 'EXCLUIR')
-                is_self = u[0] == AuthManager.get_user_id()
-                
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    if st.button("✏️", key=f"e{u[0]}", disabled=not can_edit, help="Editar"):
-                        modal_editar_usuario(u[0])
-                with c2:
-                    if st.button("🔑", key=f"p{u[0]}", disabled=not(is_self or can_edit), help="Senha"):
-                        modal_alterar_senha(u[0])
-                with c3:
-                    if st.button("🗑️", key=f"d{u[0]}", type="secondary", disabled=not can_del or is_self, help="Excluir"):
-                        modal_confirmar_exclusao(u[0])
-            
-            st.divider()
-    else:
-        st.info("📭 Nenhum usuário encontrado")
-    
-    # Footer
-    st.markdown("---")
-    if st.button("🔐 Alterar Minha Senha", use_container_width=False):
-        modal_alterar_senha(AuthManager.get_user_id())

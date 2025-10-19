@@ -1,14 +1,7 @@
 """
-Módulo de autenticação e autorização
+Módulo de autenticação
 """
-from .auth_manager import AuthManager
-from .decorators import require_auth, require_permission
-from .password import hash_password, verify_password
 
-__all__ = [
-    'AuthManager',
-    'require_auth',
-    'require_permission',
-    'hash_password',
-    'verify_password'
-]
+# NÃO importar nada aqui para evitar circular imports
+# Importe diretamente nos arquivos que precisam:
+# from auth.auth_manager import AuthManager

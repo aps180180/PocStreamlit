@@ -1,192 +1,145 @@
 """
-Gerenciador de autenticação e sessão
-VERSÃO CORRIGIDA - Verifica permissões em tempo real
+Gerenciador de Autenticação
+ATUALIZADO: Usando novos models separados
 """
 import streamlit as st
-from db.auth_models import (
-    obter_usuario_por_login,
-    atualizar_ultimo_login,
-    verificar_permissao,
-    listar_permissoes_usuario,
-    registrar_audit_log,
-    obter_usuario
-)
+from db.models import Usuario, Permissao, LogAuditoria
 from auth.password import verify_password
 
 class AuthManager:
-    """Classe para gerenciar autenticação e autorização"""
+    """Gerenciador central de autenticação e permissões"""
     
     @staticmethod
-    def login(username: str, password: str) -> tuple[bool, str]:
-        """Realiza login do usuário"""
+    def login(email, senha):
+        """
+        Realiza login do usuário
+        Retorna: (sucesso: bool, mensagem: str)
+        """
         try:
-            usuario = obter_usuario_por_login(username)
+            # Buscar usuário por email
+            usuario = Usuario.buscar_por_email(email)
             
             if not usuario:
-                return False, "Usuário ou senha inválidos"
+                return False, "❌ Email ou senha incorretos"
             
-            if usuario[7] != 'S':
-                return False, "Usuário inativo. Contate o administrador."
+            # Verificar se está ativo
+            if not usuario[5]:  # ATIVO
+                return False, "❌ Usuário inativo. Contate o administrador."
             
-            if not verify_password(password, usuario[4]):
-                return False, "Usuário ou senha inválidos"
+            # Verificar senha
+            if not verify_password(senha, usuario[3]):  # SENHA_HASH
+                return False, "❌ Email ou senha incorretos"
             
-            # Criar sessão - APENAS DADOS BÁSICOS
-            st.session_state.authenticated = True
+            # Login bem-sucedido - salvar na sessão
             st.session_state.user_id = usuario[0]
-            st.session_state.user_login = usuario[1]
+            st.session_state.user_name = usuario[1]
+            st.session_state.user_email = usuario[2]
+            st.session_state.user_perfil_id = usuario[4]
+            st.session_state.user_perfil_nome = usuario[6]
+            st.session_state.authenticated = True
             
-            atualizar_ultimo_login(usuario[0])
-            registrar_audit_log(usuario[0], "LOGIN", "SISTEMA", f"Login realizado: {username}")
+            # Registrar no log
+            LogAuditoria.registrar(usuario[0], "LOGIN", "SISTEMA", f"Login realizado: {email}")
             
-            return True, "Login realizado com sucesso!"
+            return True, f"✅ Bem-vindo, {usuario[1]}!"
             
         except Exception as e:
-            return False, f"Erro ao realizar login: {str(e)}"
+            return False, f"❌ Erro ao fazer login: {str(e)}"
     
     @staticmethod
     def logout():
         """Realiza logout do usuário"""
-        if 'user_id' in st.session_state:
-            registrar_audit_log(
-                st.session_state.user_id,
-                "LOGOUT",
-                "SISTEMA",
-                f"Logout: {st.session_state.user_login}"
-            )
+        try:
+            if 'user_id' in st.session_state:
+                LogAuditoria.registrar(
+                    st.session_state.user_id,
+                    "LOGOUT",
+                    "SISTEMA",
+                    f"Logout: {st.session_state.user_email}"
+                )
+        except:
+            pass
         
-        # Limpar TODA a sessão
+        # Limpar sessão
         for key in list(st.session_state.keys()):
             del st.session_state[key]
     
     @staticmethod
-    def is_authenticated() -> bool:
+    def is_authenticated():
         """Verifica se usuário está autenticado"""
         return st.session_state.get('authenticated', False)
     
     @staticmethod
-    def get_user_id() -> int:
+    def get_user_id():
         """Retorna ID do usuário logado"""
-        return st.session_state.get('user_id', None)
+        return st.session_state.get('user_id')
     
     @staticmethod
-    def get_user_login() -> str:
-        """Retorna login do usuário"""
-        return st.session_state.get('user_login', 'Unknown')
+    def get_user_name():
+        """Retorna nome do usuário logado"""
+        return st.session_state.get('user_name', 'Desconhecido')
     
     @staticmethod
-    def get_user_name() -> str:
-        """Retorna nome - BUSCA SEMPRE DO BANCO"""
-        if not AuthManager.is_authenticated():
-            return 'Usuário'
-        
-        try:
-            user_id = AuthManager.get_user_id()
-            usuario = obter_usuario(user_id)
-            return usuario[2] if usuario else 'Usuário'
-        except:
-            return 'Usuário'
+    def get_user_email():
+        """Retorna email do usuário logado"""
+        return st.session_state.get('user_email', '')
     
     @staticmethod
-    def get_user_email() -> str:
-        """Retorna email - BUSCA SEMPRE DO BANCO"""
-        if not AuthManager.is_authenticated():
-            return ''
-        
-        try:
-            user_id = AuthManager.get_user_id()
-            usuario = obter_usuario(user_id)
-            return usuario[3] if (usuario and usuario[3]) else ''
-        except:
-            return ''
+    def get_user_perfil():
+        """Retorna nome do perfil do usuário"""
+        return st.session_state.get('user_perfil_nome', 'Desconhecido')
     
     @staticmethod
-    def get_user_perfil() -> str:
-        """Retorna perfil - BUSCA SEMPRE DO BANCO"""
-        if not AuthManager.is_authenticated():
-            return 'Sem perfil'
-        
-        try:
-            user_id = AuthManager.get_user_id()
-            usuario = obter_usuario(user_id)
-            return usuario[5] if usuario else 'Sem perfil'
-        except:
-            return 'Sem perfil'
+    def get_user_perfil_id():
+        """Retorna ID do perfil do usuário"""
+        return st.session_state.get('user_perfil_id')
     
     @staticmethod
-    def get_user_perfil_id() -> int:
-        """Retorna ID do perfil - BUSCA SEMPRE DO BANCO"""
-        if not AuthManager.is_authenticated():
-            return None
-        
-        try:
-            user_id = AuthManager.get_user_id()
-            usuario = obter_usuario(user_id)
-            return usuario[4] if usuario else None
-        except:
-            return None
-    
-    @staticmethod
-    def is_user_active() -> bool:
-        """Verifica se usuário está ativo - BUSCA SEMPRE DO BANCO"""
-        if not AuthManager.is_authenticated():
-            return False
-        
-        try:
-            user_id = AuthManager.get_user_id()
-            usuario = obter_usuario(user_id)
-            return usuario[6] == 'S' if usuario else False
-        except:
-            return False
-    
-    @staticmethod
-    def has_permission(modulo: str, acao: str) -> bool:
+    def has_permission(modulo, acao):
         """
-        Verifica permissão - BUSCA SEMPRE DO BANCO EM TEMPO REAL
-        CRÍTICO: Não usa cache!
+        Verifica se usuário tem permissão específica
+        Args:
+            modulo: Nome do módulo (ex: 'CLIENTES', 'PRODUTOS')
+            acao: Ação desejada (ex: 'VISUALIZAR', 'CRIAR', 'EDITAR', 'EXCLUIR')
         """
         if not AuthManager.is_authenticated():
             return False
         
-        # Verificar se usuário ainda está ativo
-        if not AuthManager.is_user_active():
+        perfil_id = AuthManager.get_user_perfil_id()
+        
+        try:
+            return Permissao.verificar_permissao(perfil_id, modulo, acao)
+        except:
             return False
-        
-        # BUSCAR PERMISSÃO DIRETO DO BANCO
-        user_id = AuthManager.get_user_id()
-        return verificar_permissao(user_id, modulo, acao)
     
     @staticmethod
-    def get_user_permissions() -> list:
-        """Retorna permissões - BUSCA SEMPRE DO BANCO"""
-        if not AuthManager.is_authenticated():
-            return []
-        
-        user_id = AuthManager.get_user_id()
-        return listar_permissoes_usuario(user_id)
-    
-    @staticmethod
-    def require_active_user():
+    def audit_log(acao, modulo, detalhes=""):
         """
-        Verifica se usuário ainda está ativo
-        Se não estiver, faz logout forçado
+        Registra ação no log de auditoria
+        Args:
+            acao: Ação realizada (ex: 'CRIAR_CLIENTE')
+            modulo: Módulo (ex: 'CLIENTES')
+            detalhes: Detalhes adicionais
         """
         if not AuthManager.is_authenticated():
             return
         
-        if not AuthManager.is_user_active():
-            st.error("❌ Sua conta foi desativada. Entre em contato com o administrador.")
-            AuthManager.logout()
-            st.switch_page("pages/00_Login.py")
-            st.stop()
-    
-    @staticmethod
-    def audit_log(acao: str, modulo: str = None, detalhes: str = None):
-        """Registra ação no log de auditoria"""
-        if AuthManager.is_authenticated():
-            registrar_audit_log(
+        try:
+            LogAuditoria.registrar(
                 AuthManager.get_user_id(),
                 acao,
                 modulo,
                 detalhes
             )
+        except Exception as e:
+            print(f"Erro ao registrar log: {e}")
+    
+    @staticmethod
+    def require_auth():
+        """Decorator helper - Redireciona para login se não autenticado"""
+        if not AuthManager.is_authenticated():
+            st.error("❌ Você precisa estar autenticado")
+            st.info("Redirecionando para login...")
+            st.switch_page("pages/00_Login.py")
+            return False
+        return True
